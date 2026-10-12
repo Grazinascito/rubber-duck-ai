@@ -35,6 +35,17 @@
       this.worklet = null;
       this.scheduledSources = [];
       this.nextStartTime = 0;
+      this.playbackBus = null;
+      this.playbackMeter = null;
+      this.playbackGeneration = 0;
+      this.onPlaybackEmpty = null;
+      this.onPlaybackError = null;
+      this.onContextStateChange = () => {
+        if (this.audioContext?.state !== "running" && this.hasPendingPlayback()) {
+          this.stopPlayback();
+          this.onPlaybackError?.(new Error("AudioContext stopped during playback"));
+        }
+      };
     }
 
     async start(onAudioChunk) {
@@ -43,6 +54,7 @@
       }
       if (this.audioContext === null) {
         this.audioContext = new AudioContext();
+        this.audioContext.addEventListener("statechange", this.onContextStateChange);
       }
       if (this.audioContext.state === "suspended") {
         await this.audioContext.resume();
@@ -78,7 +90,14 @@
     // Enqueues one 24 kHz Int16 chunk at the first free slot of the schedule.
     playChunk(int16Array) {
       if (this.audioContext === null || int16Array.length === 0) {
-        return;
+        return false;
+      }
+      if (this.audioContext.state !== "running") {
+        throw new Error("AudioContext is not running");
+      }
+      if (this.playbackBus === null) {
+        this.playbackBus = this.audioContext.createGain();
+        this.playbackBus.connect(this.audioContext.destination);
       }
       const floats = new Float32Array(int16Array.length);
       for (let i = 0; i < int16Array.length; i++) {
@@ -89,36 +108,83 @@
 
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
-      source.connect(this.audioContext.destination);
+      source.connect(this.playbackBus);
       const startAt = Math.max(
         this.audioContext.currentTime + PLAYBACK_LEAD_SECONDS,
         this.nextStartTime
       );
-      source.start(startAt);
+      try {
+        source.start(startAt);
+      } catch (error) {
+        source.disconnect();
+        throw error;
+      }
       this.nextStartTime = startAt + buffer.duration;
       this.scheduledSources.push(source);
+      const generation = this.playbackGeneration;
       source.onended = () => {
+        if (generation !== this.playbackGeneration) return;
+        source.onended = null;
+        source.disconnect();
         this.scheduledSources = this.scheduledSources.filter((s) => s !== source);
+        if (!this.hasPendingPlayback()) this.onPlaybackEmpty?.();
       };
+      return true;
+    }
+
+    hasPendingPlayback() {
+      return this.scheduledSources.length > 0;
+    }
+
+    // Only speaker PCM reaches this bus; capture has a separate worklet sink.
+    acquirePlaybackMeter(fftSize) {
+      if (!this.playbackBus || !this.audioContext) return null;
+      if (this.playbackMeter) return this.playbackMeter;
+      const bus = this.playbackBus;
+      const destination = this.audioContext.destination;
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = fftSize;
+      bus.disconnect();
+      bus.connect(analyser);
+      analyser.connect(destination);
+      const meter = {
+        analyser,
+        release: () => {
+          if (this.playbackMeter !== meter) return;
+          bus.disconnect();
+          analyser.disconnect();
+          bus.connect(destination);
+          this.playbackMeter = null;
+        },
+      };
+      this.playbackMeter = meter;
+      return meter;
     }
 
     // Drops everything scheduled ("interrupted": the user spoke over the duck).
     stopPlayback() {
+      ++this.playbackGeneration;
       for (const source of this.scheduledSources) {
+        source.onended = null;
         try {
           source.stop();
         } catch {
           // already finished
         }
+        source.disconnect();
       }
       this.scheduledSources = [];
       this.nextStartTime = 0;
+      this.playbackMeter?.release();
+      this.playbackBus?.disconnect();
+      this.playbackBus = null;
     }
 
     close() {
       this.stopPlayback();
       this.stopCapture();
       if (this.audioContext !== null) {
+        this.audioContext.removeEventListener("statechange", this.onContextStateChange);
         this.audioContext.close();
         this.audioContext = null;
       }

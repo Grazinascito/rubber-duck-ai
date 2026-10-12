@@ -36,6 +36,33 @@ body {
 .duck img {
   width: 128px;
   height: auto;
+  aspect-ratio: 395 / 586;
+}
+
+.duck.is-talking {
+  transform-origin: center bottom;
+  animation: duck-talk-sway 0.4s ease-in-out infinite;
+}
+
+@keyframes duck-talk-sway {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(var(--talk-lift, 0px)) scaleY(var(--talk-squash, 1)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duck.is-talking { animation: none; transform: none; }
+}
+
+.duck-talk-debug {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font: 10px monospace;
+  pointer-events: none;
 }
 
 /* Control pill: always visible below the duck; mic and captions stay

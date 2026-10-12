@@ -43,6 +43,20 @@ def test_returns_one_gemini_envelope_with_base64_audio_for_each_audio_part_of_th
     ]
 
 
+def test_enqueues_final_audio_before_turn_complete_when_they_share_a_message():
+    message = types.LiveServerMessage(
+        server_content=types.LiveServerContent(
+            turn_complete=True,
+            model_turn=types.Content(role="model", parts=[audio_part(b"\x00\x00")]),
+        )
+    )
+
+    assert session_messages_to_client(message) == [
+        {"type": "gemini", "payload": {"audio": "AAA="}},
+        {"type": "turn_complete"},
+    ]
+
+
 def test_returns_a_gemini_envelope_with_text_from_output_audio_transcription():
     message = types.LiveServerMessage(
         server_content=types.LiveServerContent(

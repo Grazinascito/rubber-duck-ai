@@ -19,14 +19,16 @@
   const exported = factory(
     stateMachine,
     geminiClientModule,
-    microphoneAndSpeakerModule
+    microphoneAndSpeakerModule,
+    globalScope.DuckTalkAnimatorModule ||
+      (typeof require === "function" ? require("./duck-talk-animator.js") : null)
   );
   if (typeof module === "object" && module.exports) {
     module.exports = exported;
   } else {
     globalScope.DuckStatesModule = exported;
   }
-})(globalThis, function (stateMachine, geminiClientModule, micModule) {
+})(globalThis, function (stateMachine, geminiClientModule, micModule, animatorModule) {
   function base64ToInt16Array(base64) {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -36,8 +38,7 @@
     return new Int16Array(bytes.buffer);
   }
 
-  // One image per visible state (PRD 5.5); the avatar src is always derived
-  // from the state, never set from elsewhere.
+  // The animator owns src only during FALANDO. Other states keep their art.
   const STATE_IMAGES = Object.freeze({
     [stateMachine.DUCK_STATES.OUVINDO]: "/images/pato.png",
     [stateMachine.DUCK_STATES.PENSANDO]: "/images/pato-thinking.png",
@@ -60,6 +61,7 @@
     const avatarEl = rootEl.querySelector("#duck-avatar");
     if (
       avatarEl !== null &&
+      state.status !== stateMachine.DUCK_STATES.FALANDO &&
       image !== null &&
       avatarEl.getAttribute("src") !== image
     ) {
@@ -77,20 +79,51 @@
     }
   }
 
-  function initDuck(rootEl) {
-    const api = globalThis.duckApi;
+  function initDuck(rootEl, dependencies = {}) {
+    const api = dependencies.api || globalThis.duckApi;
     if (typeof api === "undefined") {
       return;
     }
 
     let state = stateMachine.initialDuckState();
-    const client = new geminiClientModule.GeminiClient();
-    const mic = new micModule.MicAndSpeaker();
+    const client = dependencies.client || new geminiClientModule.GeminiClient();
+    const mic = dependencies.mic || new micModule.MicAndSpeaker();
+    const animator = dependencies.animator || new animatorModule.DuckTalkAnimator(
+      rootEl.querySelector("#duck-avatar"),
+      rootEl.querySelector("#duck-body"),
+      rootEl.querySelector("#duck-talk-debug")
+    );
+    let turnComplete = false;
+    let destroyed = false;
+
+    function finishTurnIfDrained() {
+      if (turnComplete && !mic.hasPendingPlayback()) {
+        turnComplete = false;
+        dispatch({ type: "DUCK_TURN_END" });
+      }
+    }
+
+    function stopSpeech() {
+      turnComplete = false;
+      animator.stop();
+      mic.stopPlayback();
+      dispatch({ type: "INTERRUPTED" });
+    }
+
+    mic.onPlaybackEmpty = () => {
+      animator.stop();
+      finishTurnIfDrained();
+    };
+    mic.onPlaybackError = (error) => {
+      console.warn("[duck] reprodução:", error);
+      stopSpeech();
+    };
 
     client.onStatusChange = (status) => {
       // Connection state lives in the terminal only (PO decision): the UI
       // shows no badge.
       console.log("[duck] conexão:", status);
+      if (status === "desconectado" && !destroyed) stopSpeech();
     };
     client.onMessage = handleEnvelope;
 
@@ -102,8 +135,15 @@
         return;
       }
       const wasVisible = state.status !== stateMachine.DUCK_STATES.OCULTO;
+      const wasTalking = state.status === stateMachine.DUCK_STATES.FALANDO;
+      if (wasTalking && next.status !== stateMachine.DUCK_STATES.FALANDO) {
+        animator.stop();
+      }
       state = next;
       renderDuck(rootEl, state);
+      if (!wasTalking && state.status === stateMachine.DUCK_STATES.FALANDO) {
+        animator.start(mic);
+      }
       if (!wasVisible && state.status !== stateMachine.DUCK_STATES.OCULTO) {
         api.summon();
       } else if (wasVisible && state.status === stateMachine.DUCK_STATES.OCULTO) {
@@ -121,6 +161,8 @@
     // Privacy guardrail: hidden duck captures nothing. US6 (T039) adds the
     // farewell asset on top of this teardown.
     function closeSession() {
+      turnComplete = false;
+      animator.stop();
       mic.stopPlayback();
       mic.stopCapture();
       client.disconnect();
@@ -159,12 +201,23 @@
     }
 
     function handleEnvelope(envelope) {
+      if (destroyed) return;
       const payload = (envelope && envelope.payload) || {};
       switch (envelope.type) {
         case "gemini":
           if (typeof payload.audio === "string" && payload.audio.length > 0) {
-            mic.playChunk(base64ToInt16Array(payload.audio));
-            dispatch({ type: "DUCK_AUDIO" });
+            if (state.status === stateMachine.DUCK_STATES.OCULTO ||
+                state.status === stateMachine.DUCK_STATES.SLEEP) break;
+            try {
+              if (mic.playChunk(base64ToInt16Array(payload.audio))) {
+                if (state.status !== stateMachine.DUCK_STATES.FALANDO) turnComplete = false;
+                dispatch({ type: "DUCK_AUDIO" });
+                // A streaming gap stops the animator without ending the turn.
+                animator.start(mic);
+              }
+            } catch (error) {
+              mic.onPlaybackError(error);
+            }
           }
           // payload.text is reserved for US5 (captions).
           break;
@@ -175,17 +228,18 @@
           }
           break;
         case "interrupted":
-          mic.stopPlayback();
-          dispatch({ type: "INTERRUPTED" });
+          stopSpeech();
           break;
         case "turn_complete":
-          dispatch({ type: "DUCK_TURN_END" });
+          turnComplete = true;
+          finishTurnIfDrained();
           break;
         case "sleep":
           enterSleep();
           break;
         case "error":
           console.warn("[duck] erro do servidor:", payload);
+          stopSpeech();
           break;
       }
     }
@@ -238,6 +292,21 @@
     });
 
     renderDuck(rootEl, state);
+
+    function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      closeSession();
+      animator.destroy();
+      mic.onPlaybackEmpty = null;
+      mic.onPlaybackError = null;
+      mic.close();
+      client.onMessage = null;
+      client.onStatusChange = null;
+      globalThis.removeEventListener?.("beforeunload", destroy);
+    }
+    globalThis.addEventListener?.("beforeunload", destroy);
+    return { destroy };
   }
 
   const rootEl =

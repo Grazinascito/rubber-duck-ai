@@ -81,8 +81,6 @@ def session_messages_to_client(message: types.LiveServerMessage) -> list[dict]:
 
     if content.interrupted:
         envelopes.append({"type": "interrupted"})
-    if content.turn_complete:
-        envelopes.append({"type": "turn_complete"})
 
     input_transcription = content.input_transcription
     if input_transcription is not None and input_transcription.text:
@@ -101,5 +99,9 @@ def session_messages_to_client(message: types.LiveServerMessage) -> list[dict]:
             if inline_data is not None and inline_data.data:
                 audio_b64 = base64.b64encode(inline_data.data).decode("ascii")
                 envelopes.append({"type": "gemini", "payload": {"audio": audio_b64}})
+
+    # The renderer must enqueue the final PCM before deciding the turn drained.
+    if content.turn_complete:
+        envelopes.append({"type": "turn_complete"})
 
     return envelopes
