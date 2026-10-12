@@ -12,16 +12,16 @@ test("starts in OCULTO on a fresh app launch", () => {
   assert.deepEqual(initialDuckState(), { status: DUCK_STATES.OCULTO });
 });
 
-test("SUMMON transitions OCULTO to FALANDO because the greeting plays on connect", () => {
+test("SUMMON transitions OCULTO to OUVINDO because the duck only listens", () => {
   const next = duckReducer({ status: DUCK_STATES.OCULTO }, { type: "SUMMON" });
 
-  assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
+  assert.deepEqual(next, { status: DUCK_STATES.OUVINDO });
 });
 
-test("SUMMON transitions SLEEP to FALANDO for a new session", () => {
+test("SUMMON transitions SLEEP to OUVINDO for a new session", () => {
   const next = duckReducer({ status: DUCK_STATES.SLEEP }, { type: "SUMMON" });
 
-  assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
+  assert.deepEqual(next, { status: DUCK_STATES.OUVINDO });
 });
 
 test("DISMISS transitions any active state to OCULTO", () => {
@@ -43,7 +43,7 @@ test("SHORTCUT_PRESSED summons the duck when it is OCULTO", () => {
     { type: "SHORTCUT_PRESSED" }
   );
 
-  assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
+  assert.deepEqual(next, { status: DUCK_STATES.OUVINDO });
 });
 
 test("SHORTCUT_PRESSED hides the duck during an active conversation", () => {
@@ -61,7 +61,7 @@ test("SHORTCUT_PRESSED hides the duck during an active conversation", () => {
 test("SHORTCUT_PRESSED wakes the duck from SLEEP into a new session", () => {
   const next = duckReducer({ status: DUCK_STATES.SLEEP }, { type: "SHORTCUT_PRESSED" });
 
-  assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
+  assert.deepEqual(next, { status: DUCK_STATES.OUVINDO });
 });
 
 test("DUCK_TURN_END transitions FALANDO to OUVINDO", () => {
@@ -93,6 +93,12 @@ test("USER_SPEAKING keeps OUVINDO unchanged", () => {
 
 test("DUCK_AUDIO transitions PENSANDO to FALANDO", () => {
   const next = duckReducer({ status: DUCK_STATES.PENSANDO }, { type: "DUCK_AUDIO" });
+
+  assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
+});
+
+test("DUCK_AUDIO transitions OUVINDO to FALANDO when audio arrives without a seen user turn end", () => {
+  const next = duckReducer({ status: DUCK_STATES.OUVINDO }, { type: "DUCK_AUDIO" });
 
   assert.deepEqual(next, { status: DUCK_STATES.FALANDO });
 });

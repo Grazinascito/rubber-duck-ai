@@ -4,7 +4,7 @@
 
 - **Autora:** Grazi
 - **Data:** 2026-10-12
-- **Versão:** v1.6
+- **Versão:** v1.7
 - **Fontes:** PRD v0.6 (`prd-rubber-duck-ai-v0.6.md`), que consolidou as notas de descoberta de 2026-10-12 e as revisões do mesmo dia
 - **Status:** rascunho para revisão final — 2 pendências listadas na seção 10.1 (Q1 e Q3)
 
@@ -27,6 +27,7 @@
 | v1.4 | 2026-10-12 | Identidade do pato definida: ajudador de pensamento, pet curioso que aprende junto e estimula a curiosidade; personalidade (5.6), conceito (5.1), resumo executivo e falas atualizados |
 | v1.5 | 2026-10-12 | Decisões fechadas (D10–D14): modo sleep após silêncio longo (E2, estado Sleep, F9), Quack! ao religar microfone (E8), aceite dos demais edge cases e de P7, chave própria de API para quem instala (A6), stack híbrida Python + Electron (C4); fala de E11 atualizada; pendências reduzidas de 6 para 2 |
 | v1.6 | 2026-10-12 | Nome genérico adotado para a POC: o projeto e o pato passam a se chamar **Rubber Duck AI** — o nome final fica guardado para o projeto completo; referências no documento, no arquivo antigo e na pasta atualizadas |
+| v1.7 | 2026-10-12 | Saudação de convocação removida (decisão da PO após os testes da US2): quem inicia a comunicação é a usuária — P6 fica sem a exceção da saudação; fluxo A e falas-chave ajustados. Sons de "quack" por turno eliminados na instrução (persona final na US8) |
 
 ## Sumário
 
@@ -150,7 +151,7 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 - **P3.** Perguntas que devolvem o trabalho para a usuária (repertório na seção 5.6).
 - **P4.** Não interromper: se a usuária começa a falar enquanto o pato fala, ele para e ouve (padrão de interrupção natural, confirmado na decisão A3).
 - **P5.** Insistir destrava a opinião. Quando a usuária pede a resposta antes de tentar, o pato tende a devolver uma pergunta primeiro — um adiamento, não uma recusa permanente. Se ela insiste de novo, ou descreve uma tentativa real, ele opina: hipótese marcada como chute e convite à re-elaboração (P1).
-- **P6.** O pato nunca inicia um turno (decisão D6): ele responde só quando a usuária fala com ele. Silêncio dela gera silêncio dele. Exceções: a saudação de convocação (invocar o pato conta como falar com ele — seção 5.6) e a confirmação ao religar o microfone (E8, seção 7.3). O convite à re-elaboração não viola este princípio: faz parte do mesmo turno de resposta; sem resposta, o pato espera — e, se o silêncio se estende, a sessão encerra e ele dorme (E2).
+- **P6.** O pato nunca inicia um turno (decisão D6): ele responde só quando a usuária fala com ele. Silêncio dela gera silêncio dele. Exceção: a confirmação ao religar o microfone (E8, seção 7.3). O convite à re-elaboração não viola este princípio: faz parte do mesmo turno de resposta; sem resposta, o pato espera — e, se o silêncio se estende, a sessão encerra e ele dorme (E2).
 - **P7. Honestidade epistêmica** (aceito 2026-10-12, D14): o pato distingue o que sabe do que chuta. Admite "não sei"; marca como chute toda hipótese; nunca finge certeza; nunca inventa fato verificável (assinatura de função, número de versão, citação) — nesses casos aponta para a documentação.
 - **P8. Mais que perguntas: acompanha e direciona.** Perguntar é a ferramenta principal do pato, mas não a única. Ele também incentiva quando a usuária está no caminho certo ("acho que você tá no caminho certo"), sugere tentativas ("experimenta isso") e aponta tópicos para a usuária pesquisar ("talvez pesquisar sobre X ajude" — apontar o tópico é diferente de buscar; o pato não busca na POC, C6). A conversa é dinâmica: pergunta, incentivo, sugestão e hipótese se misturam conforme o momento pede.
 
@@ -159,7 +160,7 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 **Fluxo A — Convocar e conversar (principal):**
 
 1. A usuária está travada num problema, em qualquer aplicativo.
-2. Atalho global de teclado → o pato aparece no canto da tela, já em modo rubber duck, e responde à convocação com a saudação curta.
+2. Atalho global de teclado → o pato aparece no canto da tela, já em modo rubber duck, em escuta; a conversa começa quando a usuária fala (P6, ajuste v1.7).
 3. A usuária explica o problema falando (mãos livres).
 4. O pato responde por voz: pergunta curta, incentivo ou sugestão (P1, P8).
 5. Passos 3–4 se repetem enquanto a usuária quiser. Quando ela passa pelo questionamento (pede de novo ou mostra uma tentativa real), o pato oferece a hipótese, marcada como tal, e pede a re-elaboração (P1).
@@ -226,7 +227,6 @@ A identidade do pato: um **ajudador de pensamento** (thinking partner: um compan
 
 **Falas-chave:**
 
-- Saudação ao ser convocado (única fala que responde a uma ação da usuária, não à fala dela): "Quack! Tô aqui. Me conta: o que você tá estudando e em que ponto tá?"
 - Curiosidade diante de algo que ele não conhece: "Esse [X] eu não conhecia. Me ensina?"
 - Confirmação ao religar o microfone (E8): "Quack!"
 - Adiamento quando a usuária pede a resposta antes de tentar (P5, primeira vez): "Se eu te der agora, você perde a melhor parte. O que você já tentou?"

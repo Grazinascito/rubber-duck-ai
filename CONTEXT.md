@@ -31,12 +31,6 @@ _Avoid_: badge de status, indicador.
 Uma conversa do pato com o Gemini Live, do início até o encerramento.
 _Avoid_: conexão, conversa, thread.
 
-**Marcador de convocação**:
-A mensagem "[convocação]" enviada como turno da usuária no início da sessão;
-o modelo responde a ela apenas com a saudação. Convocar o pato conta como
-falar com ele.
-_Avoid_: trigger, comando, greeting flag.
-
 **Turno**:
 O período de fala de um dos lados da conversa. O fim do turno do pato chega
 como `turn_complete`; o fim do da usuária, como a transcrição concluída

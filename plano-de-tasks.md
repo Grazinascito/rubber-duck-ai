@@ -77,9 +77,9 @@
 
 ## Phase 4: User Story 2 - Conversar por voz (Priority: P1) 🎯 MVP
 
-**Goal**: Full voice loop with Gemini Live: talk/hear, session context, natural interruption, greeting on summon, sleep after long silence. Persona stays generic (US8 delivers identity/instruction)
+**Goal**: Full voice loop with Gemini Live: talk/hear, session context, natural interruption, sleep after long silence. The duck never initiates — the user starts every conversation (PRD v1.7). Persona stays generic (US8 delivers identity/instruction)
 
-**Independent Test**: summon → hear greeting; explain aloud → coherent answer; reply → context kept; speak over duck → it stops; 80 s of silence → duck sleeps (zzz), mic off
+**Independent Test**: summon → duck listens (no greeting); speak → coherent answer; reply → context kept; speak over duck → it stops; 80 s of silence → duck sleeps (zzz), mic off
 
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
@@ -91,7 +91,7 @@
 
 - [ ] T029 [US2] Create `gemini_live.py`: `client.aio.live.connect` + `LiveConnectConfig` (model from env, `response_modalities=["AUDIO"]`, voice `Puck`, input/output transcription, sliding-window compression, session resumption, safety default) (depends on T026–T028)
 - [ ] T030 [US2] `main.py`: `/ws` real session — audio bytes ↔ session, JSON messages out, resumption handle kept, single reconnect on GoAway
-- [ ] T031 [US2] `main.py`: greeting trigger on connect (client-content marker "[convocação]")
+- [ ] ~~T031 [US2] `main.py`: greeting trigger on connect (client-content marker "[convocação]")~~ **removido (PO, 2026-10-12, PRD v1.7)**: o pato nunca inicia a conversa — a sessão abre apenas escutando; quem fala primeiro é a usuária
 - [ ] T032 [US2] Create `frontend/microphone-and-speaker.js` + `frontend/pcm-processor.js`: capture with explicit constraints (`echoCancellation` etc.), 16 kHz Int16 stream, 24 kHz queued playback, `interrupted` → stop playback
 - [ ] T033 [US2] `frontend/duck-states.js`: Ouvindo/Pensando/Falando/Sleep states from messages + sleep closes WS (depends on T024)
 - [ ] T034 [US2] `main.py`: backend idle timer 80 s (env-configurable, `SLEEP_AFTER_SECONDS`) since last user utterance → `sleep` message + session close
@@ -99,8 +99,9 @@
 - [ ] T036 [US2] Manual validation AC2.1–AC2.3 (voice, context, interruption, sleep)
 
 **Decisões US2 (revisão de código 2026-10-12, spec↔código alinhados):**
+- **Saudação removida (PO, 2026-10-12, PRD v1.7)**: quem inicia a comunicação é a usuária (P6 sem exceção); instrução placeholder (`DUCK_INSTRUCTION` em `gemini_live.py`) proíbe sons de pato/quack — persona final na US8/T046
 - `DUCK_VOICE` no `.env` (default `Puck`) — troca de voz sem tocar código (avaliar no T036)
-- `GREETING_INSTRUCTION` placeholder em `gemini_live.py` — mínimo para o marcador da T031 produzir saudação; US8/T046 substitui
+- ~~`GREETING_INSTRUCTION` placeholder em `gemini_live.py` — mínimo para o marcador da T031 produzir saudação; US8/T046 substitui~~ → virou `DUCK_INSTRUCTION` (sem marcador, sem quack); US8/T046 substitui
 - Envelopes de erro `session_lost`/`session_failed` além dos 4 tipos da T026 — falha de sessão/reconexão avisada ao cliente
 - Ação `USER_SPEAKING` no reducer (no-op) — gatilho explícito para a arte por estado da US8
 - Timer de sono reseta com transcrição vazia também (ASR falhando ≠ silêncio, E5); atalho acorda do SLEEP (PRD 5.5)
@@ -149,7 +150,7 @@
 - [ ] T043 [US8] `frontend/index.html` + `duck.css`: icon-bar container below the duck — appears on hover, `no-drag`, empty (mic icon in US4, caption icon in US5)
 - [ ] T044 [US8] `frontend/duck-states.js`: `imageForState` mapping wired into the render function (depends on T024, T033, T042)
 - [ ] T045 [US8] Placeholder art set per state + icon glyphs (mic, legenda, tray) in `frontend/images/`
-- [ ] T046 [US8] Create `duck_instruction.py`: instruction from PRD 5.6 (persona, falas-chave, question bank, user's language) + "[convocação]" marker mapping; Q3/AC3.7 decided here with the PO; plugs into `LiveConnectConfig` (depends on T029, gate Q1)
+- [ ] T046 [US8] Create `duck_instruction.py`: instruction from PRD 5.6 (persona, falas-chave, question bank, user's language); Q3/AC3.7 decided here with the PO; plugs into `LiveConnectConfig` (depends on T029, gate Q1)
 - [ ] T047 [US8] Final duck art from Stitch reference (PRD 5.6) replacing placeholders; re-verify state→image switch (depends on T044, T045)
 - [ ] T048 [US8] Manual validation: visual checklist per state + greeting/falas-chave read-through (ensaio curto, A5)
 

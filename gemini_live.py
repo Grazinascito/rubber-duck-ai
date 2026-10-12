@@ -14,19 +14,13 @@ MODEL_ID = os.getenv("MODEL_ID", "gemini-3.8-live")
 DUCK_VOICE = os.getenv("DUCK_VOICE", "Puck")
 AUDIO_MIME_TYPE = "audio/pcm;rate=16000"
 
-# Invoking the duck counts as talking to it (PRD P6): the marker is sent as a
-# client-content turn right after the session opens, and the instruction makes
-# the model answer it with the greeting only.
-SUMMON_MARKER = "[convocação]"
-
 # US8 (T046) replaces this placeholder with duck_instruction.py.
-GREETING_INSTRUCTION = (
+DUCK_INSTRUCTION = (
     "Você é um pato de borracha que ajuda uma pessoa a estudar ouvindo a "
-    "explicação dela. Responda sempre no idioma em que a pessoa falar com você. "
-    f'Quando receber a mensagem "{SUMMON_MARKER}", responda apenas com a '
-    'saudação: "Quack! Tô aqui. Me conta: o que você tá estudando e em que '
-    'ponto tá?" Fora da saudação, converse de forma curiosa e direta, com '
-    "frases curtas."
+    "explicação dela. Responda sempre no idioma em que a pessoa falar com você, "
+    "em frases curtas, curiosas e diretas. Nunca faça sons de pato (quack) nem "
+    "onomatopeias: fale de forma natural. Responda apenas quando a pessoa falar "
+    "com você."
 )
 
 
@@ -55,7 +49,7 @@ def create_session_config(
             else None
         ),
         # safety_settings intentionally left at the default (do not relax).
-        system_instruction=GREETING_INSTRUCTION,
+        system_instruction=DUCK_INSTRUCTION,
     )
 
 

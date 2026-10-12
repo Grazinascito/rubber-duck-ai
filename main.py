@@ -9,7 +9,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
 from gemini_live import (
-    SUMMON_MARKER,
     connect_session,
     send_audio,
     session_messages_to_client,
@@ -64,17 +63,11 @@ async def ws_endpoint(websocket: WebSocket) -> None:
     logger.info("ws conectado (sleep timeout %.1fs)", timeout_seconds)
 
     try:
-        greeted = False
         go_away_reconnects = 0
         while True:
             async with connect_session(saved_handle) as session:
-                if not greeted:
-                    # T031: summoning the duck counts as talking to it (PRD P6).
-                    await session.send_client_content(
-                        turns=[{"role": "user", "parts": [{"text": SUMMON_MARKER}]}],
-                        turn_complete=True,
-                    )
-                    greeted = True
+                # The duck never initiates (PRD P6, without the greeting
+                # exception): the session opens listening only.
 
                 end_reason: str | None = None
                 go_away_seen = False
@@ -168,7 +161,7 @@ async def ws_endpoint(websocket: WebSocket) -> None:
                 and go_away_seen
                 and go_away_reconnects < 1
             ):
-                # Single reconnect with the stored handle; no new greeting.
+                # Single reconnect with the stored handle.
                 go_away_reconnects += 1
                 continue
             if end_reason == "session_ended":

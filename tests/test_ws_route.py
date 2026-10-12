@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 from google.genai import types
 
 import main
-from gemini_live import SUMMON_MARKER
 
 
 def audio_part(data: bytes) -> types.Part:
@@ -82,21 +81,19 @@ def client():
     return TestClient(main.app)
 
 
-def test_sends_the_summon_marker_as_client_content_right_after_the_websocket_connects(
+def test_does_not_send_any_client_content_when_the_websocket_connects(
     client, monkeypatch
 ):
     stub = StubSession(hold_open=True)
     monkeypatch.setattr(main, "connect_session", StubConnect([stub]))
 
     with client.websocket_connect("/ws") as websocket:
-        assert wait_until(lambda: len(stub.client_content_calls) == 1)
+        # The duck never initiates (PRD P6): no marker, no turn — the session
+        # opens listening only. The audio exchange proves the handler ran.
+        websocket.send_bytes(b"\x01\x02")
+        assert wait_until(lambda: stub.sent_audio == [b"\x01\x02"])
 
-    assert stub.client_content_calls == [
-        {
-            "turns": [{"role": "user", "parts": [{"text": SUMMON_MARKER}]}],
-            "turn_complete": True,
-        }
-    ]
+    assert stub.client_content_calls == []
 
 
 def test_forwards_binary_audio_frames_from_the_websocket_to_the_gemini_session(
@@ -106,7 +103,6 @@ def test_forwards_binary_audio_frames_from_the_websocket_to_the_gemini_session(
     monkeypatch.setattr(main, "connect_session", StubConnect([stub]))
 
     with client.websocket_connect("/ws") as websocket:
-        assert wait_until(lambda: len(stub.client_content_calls) == 1)
         websocket.send_bytes(b"\x01\x02\x03")
         assert wait_until(lambda: stub.sent_audio == [b"\x01\x02\x03"])
 
@@ -232,5 +228,6 @@ def test_reconnects_once_with_the_stored_resumption_handle_after_go_away(
         assert websocket.receive_json() == {"type": "gemini", "payload": {"audio": "eHk="}}
 
     assert factory.handles == [None, "handle-1"]
-    assert first.client_content_calls != []
+    # No client content on any (re)connect: the duck never initiates.
+    assert first.client_content_calls == []
     assert second.client_content_calls == []

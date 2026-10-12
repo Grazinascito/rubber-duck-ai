@@ -118,7 +118,6 @@ function startMouseCapturePolling() {
     if (inside !== mouseCaptured) {
       mouseCaptured = inside;
       duckWindow.setIgnoreMouseEvents(!inside);
-      console.log(`[duck] mouse capture: ${inside}`);
     }
   }, MOUSE_POLL_INTERVAL_MS);
 }

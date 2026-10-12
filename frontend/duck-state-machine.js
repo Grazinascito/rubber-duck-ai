@@ -32,18 +32,17 @@
     const type = typeof action === "object" && action !== null ? action.type : null;
     switch (type) {
       case "SUMMON":
-        // The greeting plays right after the session connects (PRD fluxo A).
-        return { status: DUCK_STATES.FALANDO };
+        // Summoning only opens the session; the duck listens and never
+        // initiates a turn (PRD P6, without the greeting exception).
+        return { status: DUCK_STATES.OUVINDO };
       case "DISMISS":
         return { status: DUCK_STATES.OCULTO };
       case "SHORTCUT_PRESSED":
-        // The summon command wakes a sleeping duck into a new session
-        // (PRD 5.5: Sleep exits via "comando de convocação").
         if (
           state.status === DUCK_STATES.OCULTO ||
           state.status === DUCK_STATES.SLEEP
         ) {
-          return { status: DUCK_STATES.FALANDO };
+          return { status: DUCK_STATES.OUVINDO };
         }
         return { status: DUCK_STATES.OCULTO };
       // Explicit no-op: the duck is already listening; US8 uses it for art.
@@ -54,9 +53,15 @@
           ? { status: DUCK_STATES.PENSANDO }
           : state;
       case "DUCK_AUDIO":
-        return state.status === DUCK_STATES.PENSANDO
-          ? { status: DUCK_STATES.FALANDO }
-          : state;
+        // Model audio can arrive while the UI still shows OUVINDO (e.g.
+        // without a seen USER_TURN_END), or after PENSANDO.
+        if (
+          state.status === DUCK_STATES.OUVINDO ||
+          state.status === DUCK_STATES.PENSANDO
+        ) {
+          return { status: DUCK_STATES.FALANDO };
+        }
+        return state;
       case "DUCK_TURN_END":
       case "INTERRUPTED":
         return state.status === DUCK_STATES.FALANDO
