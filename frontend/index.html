@@ -6,13 +6,17 @@
     <link rel="stylesheet" href="duck.css" />
   </head>
   <body>
-    <main class="duck-panel">
-      <h1>🦆 rubber-duck-ai</h1>
-      <p>
-        status:
-        <span id="status" data-testid="connection-status">desconectado</span>
-      </p>
-    </main>
+    <div id="duck-root" class="duck-root is-oculto">
+      <div class="duck" id="duck-body">
+        <img src="/images/duck-idle.png" alt="Pato de borracha" draggable="false" />
+        <p class="duck-status">
+          status:
+          <span id="status" data-testid="connection-status">desconectado</span>
+        </p>
+      </div>
+    </div>
     <script src="gemini-client.js"></script>
+    <script src="duck-state-machine.js"></script>
+    <script src="duck-states.js"></script>
   </body>
 </html>

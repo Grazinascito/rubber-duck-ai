@@ -1,6 +1,17 @@
 "use strict";
 
-const { app, BrowserWindow, dialog, ipcMain, session } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  session,
+  Tray,
+} = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -10,6 +21,7 @@ const SERVER_URL = "http://127.0.0.1:8000";
 const HEALTH_URL = `${SERVER_URL}/health`;
 
 let pythonProcess = null;
+let duckWindow = null;
 
 function resolvePythonCommand() {
   if (process.platform === "win32") {
@@ -46,10 +58,31 @@ async function waitForHealth(timeoutMs = 15000) {
   }
 }
 
+const DUCK_WINDOW_SIZE = 160;
+const DUCK_WINDOW_MARGIN = 16;
+
+function duckWindowPosition() {
+  const workArea = screen.getPrimaryDisplay().workArea;
+  return {
+    x: workArea.x + workArea.width - DUCK_WINDOW_SIZE - DUCK_WINDOW_MARGIN,
+    y: workArea.y + workArea.height - DUCK_WINDOW_SIZE - DUCK_WINDOW_MARGIN,
+  };
+}
+
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 480,
-    height: 360,
+  const { x, y } = duckWindowPosition();
+  duckWindow = new BrowserWindow({
+    width: DUCK_WINDOW_SIZE,
+    height: DUCK_WINDOW_SIZE,
+    x,
+    y,
+    transparent: true,
+    frame: false,
+    hasShadow: false,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -57,11 +90,47 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
     },
   });
-  win.loadURL(SERVER_URL);
+  duckWindow.loadURL(SERVER_URL);
 }
 
-ipcMain.on("duck:summon", () => console.log("[duck] summon received"));
-ipcMain.on("duck:dismiss", () => console.log("[duck] dismiss received"));
+const MOUSE_POLL_INTERVAL_MS = 50;
+let mouseCaptured = null;
+
+// Click-through hover detection lives in the main process on purpose:
+// setIgnoreMouseEvents makes the OS skip the window entirely, so no renderer
+// event (mouseenter/mousemove, even with forward: true) fires reliably.
+// Polling the system cursor against the window bounds does not depend on
+// page events.
+function startMouseCapturePolling() {
+  setInterval(() => {
+    if (duckWindow === null || !duckWindow.isVisible()) {
+      mouseCaptured = null;
+      return;
+    }
+    const cursor = screen.getCursorScreenPoint();
+    const bounds = duckWindow.getBounds();
+    const inside =
+      cursor.x >= bounds.x &&
+      cursor.x <= bounds.x + bounds.width &&
+      cursor.y >= bounds.y &&
+      cursor.y <= bounds.y + bounds.height;
+    if (inside !== mouseCaptured) {
+      mouseCaptured = inside;
+      duckWindow.setIgnoreMouseEvents(!inside);
+      console.log(`[duck] mouse capture: ${inside}`);
+    }
+  }, MOUSE_POLL_INTERVAL_MS);
+}
+
+ipcMain.on("duck:summon", () => {
+  if (duckWindow === null) return;
+  duckWindow.show();
+});
+
+ipcMain.on("duck:dismiss", () => {
+  if (duckWindow === null) return;
+  duckWindow.hide();
+});
 
 app.whenReady().then(async () => {
   session.defaultSession.setPermissionRequestHandler(
@@ -85,13 +154,48 @@ app.whenReady().then(async () => {
   }
 
   createWindow();
+
+  globalShortcut.register("CommandOrControl+Shift+D", () => {
+    if (duckWindow !== null) {
+      duckWindow.webContents.send("shortcut:pressed");
+    }
+  });
+
+  createTray();
+  startMouseCapturePolling();
 });
+
+function createTray() {
+  const icon = nativeImage.createFromPath(
+    path.join(__dirname, "images", "tray-template.png")
+  );
+  if (process.platform === "darwin") {
+    icon.setTemplateImage(true);
+  }
+  const tray = new Tray(icon);
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: "Convocar pato",
+        click: () => {
+          if (duckWindow !== null) {
+            duckWindow.webContents.send("tray:summon");
+          }
+        },
+      },
+      { type: "separator" },
+      { label: "Sair", click: () => app.quit() },
+    ])
+  );
+  return tray;
+}
 
 app.on("window-all-closed", () => {
   app.quit();
 });
 
 app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
   if (pythonProcess !== null) {
     pythonProcess.kill();
     pythonProcess = null;

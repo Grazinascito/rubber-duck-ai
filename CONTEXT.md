@@ -19,6 +19,11 @@ _Avoid_: payload solto, mensagem crua.
 Os dois comandos que mostram (summon) e escondem (dismiss) o pato.
 _Avoid_: abrir/fechar, mostrar/esconder, toggle.
 
+**Oculto / Visível**:
+Os dois estados do pato. Oculto: ausente da tela, janela escondida, sem
+interação. Visível: presente no canto, arrastável, hover captura o mouse.
+_Avoid_: escondido/mostrado, aberto/fechado, minimizado, toggle.
+
 **Marcador de conexão**:
 O elemento da página que exibe se o pato está "conectado" ou "desconectado"
 do servidor.
