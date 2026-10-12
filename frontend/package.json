@@ -1,0 +1,13 @@
+{
+  "name": "rubber-duck-ai-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "electron": "44.7.0"
+  }
+}
