@@ -209,7 +209,7 @@
 - [ ] T060 Measure cost per session from API usage data (CS2; closes open billing question empirically)
 - [ ] T061 Short adversarial safety test: request prohibited/offensive content, record behavior
 - [ ] T062 Long session test: coherence with sliding-window compression (E6)
-- [ ] T063 Full AC checklist pass + final commit/tag
+- [ ] T063 Full AC checklist pass
 
 ---
 
