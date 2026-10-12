@@ -10,6 +10,7 @@ const {
   nativeImage,
   screen,
   session,
+  systemPreferences,
   Tray,
 } = require("electron");
 const { spawn } = require("node:child_process");
@@ -151,6 +152,15 @@ app.whenReady().then(async () => {
     );
     app.quit();
     return;
+  }
+
+  // T035: on macOS the renderer's getUserMedia fails without the system-level
+  // microphone grant; Windows uses the Chromium prompt instead.
+  if (
+    process.platform === "darwin" &&
+    systemPreferences.getMediaAccessStatus("microphone") !== "granted"
+  ) {
+    await systemPreferences.askForMediaAccess("microphone");
   }
 
   createWindow();

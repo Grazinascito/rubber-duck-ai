@@ -2,7 +2,8 @@
 
 - **Data:** 2026-10-12 · **Fontes:** PRD v1.6 + `pesquisa-tecnica.md` · **Detalhes** (assinaturas, nomes de testes, subtarefas): plano de implementação, depois da aprovação deste
 - **Tags:** `[P]` = paralelizável · `[USx]` = story dona da task · `(depends on Txxx)` = dependência
-- **Decisões embutidas** (motivos na pesquisa): Electron abre com `loadURL("http://127.0.0.1:8000")`, não `loadFile`; timer de sono (120 s) no backend via `input_audio_transcription`; `safety_settings` no padrão; modelo `gemini-3.8-live` via `.env`
+- **Decisões embutidas** (motivos na pesquisa): Electron abre com `loadURL("http://127.0.0.1:8000")`, não `loadFile`; timer de sono (80 s) no backend via `input_audio_transcription`; `safety_settings` no padrão; modelo `gemini-3.8-live` via `.env`
+- **Reestruturação (2026-10-12, a pedido da PO)**: nova **US8 — Identidade do pato (visual + fala)**, antes da US4. A autoria da system instruction (`duck_instruction.py`) mudou da US3 para a US8; a US3 ficou com ajuste fino e validação do comportamento e passou a depender da US8. A US6 subiu uma fase para acomodar a ordem.
 
 ---
 
@@ -32,7 +33,7 @@
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
 - [ ] T007 [P] Contract test `/health` returns 200 in `tests/test_health.py`
-- [ ] T008 [P] Integration test WS echo (JSON in → `echo` out) in `tests/test_ws_echo.py`
+- [ ] ~~T008 [P] Integration test WS echo (JSON in → `echo` out) in `tests/test_ws_echo.py`~~ **removido na US2**: o echo foi substituído pela sessão real; `/ws` passa a ser coberto por T027
 - [ ] T009 [P] Test static page contains connection marker in `tests/test_static.py`
 
 ### Implementation for Foundational
@@ -51,7 +52,7 @@
 
 ## Phase 3: User Story 1 - Convocar o pato (Priority: P1) 🎯 MVP
 
-**Goal**: Global shortcut summons a draggable floating duck in any app; avatar composition (duck + icon bar) with state-based image switching; no voice yet
+**Goal**: Global shortcut summons a draggable floating duck in any app; avatar mechanism (img + render as function of state); no voice yet. Per-state art and icon bar belong to US8.
 
 **Independent Test**: with any app focused: shortcut → duck appears in corner; drag works; shortcut again → duck hides
 
@@ -64,12 +65,11 @@
 - [ ] T018 [US1] Create `frontend/duck-state-machine.js` — pure reducer, states Oculto/Visível (depends on T017)
 - [ ] T019 [US1] `frontend/main.js`: floating window (`transparent`, `frame: false`, `hasShadow: false`, `alwaysOnTop`, corner position)
 - [ ] T020 [US1] `frontend/main.js`: `globalShortcut` `CmdOrCtrl+Shift+D` toggle + IPC notify via preload
-- [ ] T021 [US1] `frontend/duck.css` + `index.html`: drag region on duck, `no-drag` on icon bar, transparent body
+- [ ] T021 [US1] `frontend/duck.css` + `index.html`: drag region on duck, transparent body
 - [ ] T022 [US1] `frontend/main.js`: click-through via `setIgnoreMouseEvents(true, {forward: true})` + mouseenter/mouseleave
 - [ ] T023 [US1] `frontend/main.js`: tray icon with Summon/Quit
-- [ ] T024 [US1] `frontend/duck-states.js` + `index.html`: `<img id="duck-avatar">` + state→image switch (render as function of state; placeholder art for Visível) in `frontend/images/`
-- [ ] T025 [US1] `frontend/index.html` + `duck.css`: icon-bar container below the duck — appears on hover, `no-drag`, empty in this story (mic icon arrives in US4, caption icon in US5)
-- [ ] T026 [US1] Manual validation AC1.1–AC1.3 (macOS) + AC1.4 Windows smoke
+- [ ] T024 [US1] `frontend/duck-states.js` + `index.html`: `<img id="duck-avatar">` rendered as function of state, single placeholder image in `frontend/images/`
+- [ ] T025 [US1] Manual validation AC1.1–AC1.3 (macOS) + AC1.4 Windows smoke
 
 **Checkpoint**: US1 works alone; foundation still green
 
@@ -77,54 +77,39 @@
 
 ## Phase 4: User Story 2 - Conversar por voz (Priority: P1) 🎯 MVP
 
-**Goal**: Full voice loop with Gemini Live: talk/hear, session context, natural interruption, greeting on summon, sleep after long silence. Persona stays generic (US3)
+**Goal**: Full voice loop with Gemini Live: talk/hear, session context, natural interruption, greeting on summon, sleep after long silence. Persona stays generic (US8 delivers identity/instruction)
 
-**Independent Test**: summon → hear greeting; explain aloud → coherent answer; reply → context kept; speak over duck → it stops; 2 min silence → duck sleeps (zzz), mic off
+**Independent Test**: summon → hear greeting; explain aloud → coherent answer; reply → context kept; speak over duck → it stops; 80 s of silence → duck sleeps (zzz), mic off
 
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T027 [P] [US2] Unit test event→message mapping (`interrupted`, `turn_complete`, `gemini`, `user`) in `tests/test_message_mapping.py`
-- [ ] T028 [P] [US2] Integration test `/ws` with stubbed Gemini session (audio reaches session; greeting trigger fired) in `tests/test_ws_route.py`
-- [ ] T029 [P] [US2] Unit test pure sleep decision (`should_sleep(last_utterance, now, timeout)`) in `tests/test_sleep_decision.py`
+- [ ] T026 [P] [US2] Unit test event→message mapping (`interrupted`, `turn_complete`, `gemini`, `user`) in `tests/test_message_mapping.py`
+- [ ] T027 [P] [US2] Integration test `/ws` with stubbed Gemini session (audio reaches session; greeting trigger fired) in `tests/test_ws_route.py`
+- [ ] T028 [P] [US2] Unit test pure sleep decision (`should_sleep(last_utterance, now, timeout)`) in `tests/test_sleep_decision.py`
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] Create `gemini_live.py`: `client.aio.live.connect` + `LiveConnectConfig` (model from env, `response_modalities=["AUDIO"]`, voice `Puck`, input/output transcription, sliding-window compression, session resumption, safety default) (depends on T027–T029)
-- [ ] T031 [US2] `main.py`: `/ws` real session — audio bytes ↔ session, JSON messages out, resumption handle kept, single reconnect on GoAway
-- [ ] T032 [US2] `main.py`: greeting trigger on connect (client-content marker "[convocação]")
-- [ ] T033 [US2] Create `frontend/microphone-and-speaker.js` + `frontend/pcm-processor.js`: capture with explicit constraints (`echoCancellation` etc.), 16 kHz Int16 stream, 24 kHz queued playback, `interrupted` → stop playback
-- [ ] T034 [US2] `frontend/duck-states.js`: Ouvindo/Pensando/Falando/Sleep states from messages + state→image switch for each new state (placeholder art) + sleep closes WS (depends on T024)
-- [ ] T035 [US2] `main.py`: backend idle timer 120 s (env-configurable) since last user utterance → `sleep` message + session close
-- [ ] T036 [US2] `frontend/main.js`: macOS mic permission (`systemPreferences.askForMediaAccess('microphone')`)
-- [ ] T037 [US2] Manual validation AC2.1–AC2.3 (voice, context, interruption, sleep)
+- [ ] T029 [US2] Create `gemini_live.py`: `client.aio.live.connect` + `LiveConnectConfig` (model from env, `response_modalities=["AUDIO"]`, voice `Puck`, input/output transcription, sliding-window compression, session resumption, safety default) (depends on T026–T028)
+- [ ] T030 [US2] `main.py`: `/ws` real session — audio bytes ↔ session, JSON messages out, resumption handle kept, single reconnect on GoAway
+- [ ] T031 [US2] `main.py`: greeting trigger on connect (client-content marker "[convocação]")
+- [ ] T032 [US2] Create `frontend/microphone-and-speaker.js` + `frontend/pcm-processor.js`: capture with explicit constraints (`echoCancellation` etc.), 16 kHz Int16 stream, 24 kHz queued playback, `interrupted` → stop playback
+- [ ] T033 [US2] `frontend/duck-states.js`: Ouvindo/Pensando/Falando/Sleep states from messages + sleep closes WS (depends on T024)
+- [ ] T034 [US2] `main.py`: backend idle timer 80 s (env-configurable, `SLEEP_AFTER_SECONDS`) since last user utterance → `sleep` message + session close
+- [ ] T035 [US2] `frontend/main.js`: macOS mic permission (`systemPreferences.askForMediaAccess('microphone')`)
+- [ ] T036 [US2] Manual validation AC2.1–AC2.3 (voice, context, interruption, sleep)
+
+**Decisões US2 (revisão de código 2026-10-12, spec↔código alinhados):**
+- `DUCK_VOICE` no `.env` (default `Puck`) — troca de voz sem tocar código (avaliar no T036)
+- `GREETING_INSTRUCTION` placeholder em `gemini_live.py` — mínimo para o marcador da T031 produzir saudação; US8/T046 substitui
+- Envelopes de erro `session_lost`/`session_failed` além dos 4 tipos da T026 — falha de sessão/reconexão avisada ao cliente
+- Ação `USER_SPEAKING` no reducer (no-op) — gatilho explícito para a arte por estado da US8
+- Timer de sono reseta com transcrição vazia também (ASR falhando ≠ silêncio, E5); atalho acorda do SLEEP (PRD 5.5)
 
 **Checkpoint**: US1+US2 = core demo loop working (convocar → conversar → interromper → dormir)
 
 ---
 
-## Phase 5: User Story 3 - Comportamento rubber duck (Priority: P2)
-
-**Goal**: System instruction turns generic voice into rubber duck mode: questions first, hypothesis marked as guess, teach-back, epistemic honesty (P1–P8)
-
-**Independent Test**: scripted conversation per ACs: ask for answer → deferral (AC3.3); insist → marked hypothesis + teach-back (AC3.4/3.5); factual question → "não sei/olha a doc" (AC3.8); short one-at-a-time questions (AC3.1/3.2)
-
-**⚠️ Requires PRD pendings Q1 (persona/falas) and Q3 (AC3.7) closed by product owner first**
-
-### Tests for User Story 3 ⚠️
-
-- No automated tests (language behavior not automatable within C1); manual script above is the test
-
-### Implementation for User Story 3
-
-- [ ] T038 [US3] Create `duck_instruction.py`: instruction from PRD 5.6 (persona, key lines, question bank, user's language) + summon marker mapping
-- [ ] T039 [US3] Tune instruction across test sessions (C5: code, concept, article)
-- [ ] T040 [US3] Verify R2/P7: every hypothesis marked as guess; unverifiable facts refused
-
-**Checkpoint**: questionamento → hipótese → re-elaboração arc works; demo recordable (CS1)
-
----
-
-## Phase 6: User Story 6 - Encerrar a sessão (Priority: P2)
+## Phase 5: User Story 6 - Encerrar a sessão (Priority: P2)
 
 **Goal**: Command ends session: short farewell, duck leaves screen, nothing captured after (privacy AC6.2)
 
@@ -132,20 +117,66 @@
 
 ### Tests for User Story 6 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T041 [P] [US6] Unit test state machine: active states → Encerrado on end event; no capture state after
+- [ ] T037 [P] [US6] Unit test state machine: active states → Encerrado on end event; no capture state after
 
 ### Implementation for User Story 6
 
-- [ ] T042 [US6] Same global shortcut ends active session (toggle summon/dismiss) (depends on T020)
-- [ ] T043 [US6] `frontend/duck-states.js`: teardown sequence — stop playback → `stop()` tracks → close WS → play local farewell audio → Oculto
-- [ ] T044 [US6] Add farewell sound asset in `frontend/images/` (local audio, no API turn — deterministic, zero cost)
-- [ ] T045 [US6] Manual validation AC6.1/AC6.2 (macOS mic indicator after end)
+- [ ] T038 [US6] Same global shortcut ends active session (toggle summon/dismiss) (depends on T020)
+- [ ] T039 [US6] `frontend/duck-states.js`: teardown sequence — stop playback → `stop()` tracks → close WS → play local farewell audio → Oculto
+- [ ] T040 [US6] Add farewell sound asset in `frontend/images/` (local audio, no API turn — deterministic, zero cost)
+- [ ] T041 [US6] Manual validation AC6.1/AC6.2 (macOS mic indicator after end)
 
 **Checkpoint**: full Fluxo A (convocar → conversar → encerrar) with privacy closed
 
 ---
 
-## Phase 7: User Story 4 - Desligar a escuta (Priority: P3)
+## Phase 6: User Story 8 - Identidade do pato: visual e fala (Priority: P2) 🆕
+
+**Goal**: The duck's identity in one place: one image per state (all states from PRD 5.5, including Sem escuta and Sleep "zzz"), icon bar below the duck (hover, holds future mic/caption icons), final art from the Stitch reference, and the duck's system instruction (`duck_instruction.py` from PRD 5.6 — persona, falas-chave, saudação on summon marker)
+
+**Independent Test**: unit-test drive the state machine through all states → each maps to its image file; hover the duck → icon bar appears below; summon → greeting matches the PRD falas-chave
+
+**⚠️ Requires PRD pending Q1 (persona/falas) closed by product owner first. Q3 (AC3.7) is decided while structuring the instruction in T046 (PO's call, 2026-10-12: "vamos ver na hora de estruturar")**
+
+**Note**: Sem escuta art ships here; the toggle that enters that state arrives in US4
+
+### Tests for User Story 8 (OPTIONAL - only if tests requested) ⚠️
+
+- [ ] T042 [P] [US8] Unit test `imageForState` maps every PRD 5.5 state to an existing image file (null for Oculto/Encerrado) in `frontend/duck-state-machine.test.js`
+
+### Implementation for User Story 8
+
+- [ ] T043 [US8] `frontend/index.html` + `duck.css`: icon-bar container below the duck — appears on hover, `no-drag`, empty (mic icon in US4, caption icon in US5)
+- [ ] T044 [US8] `frontend/duck-states.js`: `imageForState` mapping wired into the render function (depends on T024, T033, T042)
+- [ ] T045 [US8] Placeholder art set per state + icon glyphs (mic, legenda, tray) in `frontend/images/`
+- [ ] T046 [US8] Create `duck_instruction.py`: instruction from PRD 5.6 (persona, falas-chave, question bank, user's language) + "[convocação]" marker mapping; Q3/AC3.7 decided here with the PO; plugs into `LiveConnectConfig` (depends on T029, gate Q1)
+- [ ] T047 [US8] Final duck art from Stitch reference (PRD 5.6) replacing placeholders; re-verify state→image switch (depends on T044, T045)
+- [ ] T048 [US8] Manual validation: visual checklist per state + greeting/falas-chave read-through (ensaio curto, A5)
+
+**Checkpoint**: duck has full identity — per-state visuals, icon bar, final art, persona/falas loaded
+
+---
+
+## Phase 7: User Story 3 - Comportamento rubber duck (Priority: P2)
+
+**Goal**: Validate and tune the duck's behavior against P1–P8: questions first, hypothesis marked as guess, teach-back, epistemic honesty. Instruction authored in US8; this story tunes it.
+
+**Independent Test**: scripted conversation per ACs: ask for answer → deferral (AC3.3); insist → marked hypothesis + teach-back (AC3.4/3.5); factual question → "não sei/olha a doc" (AC3.8); short one-at-a-time questions (AC3.1/3.2)
+
+### Tests for User Story 3 ⚠️
+
+- No automated tests (language behavior not automatable within C1); manual script above is the test
+
+### Implementation for User Story 3
+
+- [ ] T049 [US3] Tune `duck_instruction.py` across test sessions until AC3.1–AC3.8 hold (C5: code, concept, article) (depends on T046)
+- [ ] T050 [US3] Verify R2/P7: every hypothesis marked as guess; unverifiable facts refused
+
+**Checkpoint**: questionamento → hipótese → re-elaboração arc works; demo recordable (CS1)
+
+---
+
+## Phase 8: User Story 4 - Desligar a escuta (Priority: P3)
 
 **Goal**: Mic icon toggles listening with permanent on-avatar mute indicator; re-enable plays "Quack!" (E8/D11)
 
@@ -153,18 +184,18 @@
 
 ### Tests for User Story 4 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T046 [P] [US4] Unit test state machine: enter/exit "Sem escuta"; indicator derived from state
+- [ ] T051 [P] [US4] Unit test state machine: enter/exit "Sem escuta"; indicator derived from state
 
 ### Implementation for User Story 4
 
-- [ ] T047 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T025)
-- [ ] T048 [US4] `frontend/microphone-and-speaker.js`: mute = `stop()` tracks; unmute = new `getUserMedia` with same constraints
-- [ ] T049 [US4] Mute indicator overlay on avatar while disabled + local `quack.mp3` on re-enable
-- [ ] T050 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test)
+- [ ] T052 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T043)
+- [ ] T053 [US4] `frontend/microphone-and-speaker.js`: mute = `stop()` tracks; unmute = new `getUserMedia` with same constraints
+- [ ] T054 [US4] Mute indicator overlay on avatar while disabled + local `quack.mp3` on re-enable
+- [ ] T055 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test)
 
 ---
 
-## Phase 8: User Story 5 - Legendas (Priority: P3)
+## Phase 9: User Story 5 - Legendas (Priority: P3)
 
 **Goal**: Caption icon shows/hides transcript of duck's speech anytime; voice has no off by design (D7)
 
@@ -172,17 +203,17 @@
 
 ### Tests for User Story 5 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T051 [P] [US5] Unit test state machine: caption toggle independent of listening state (AC4.2)
+- [ ] T056 [P] [US5] Unit test state machine: caption toggle independent of listening state (AC4.2)
 
 ### Implementation for User Story 5
 
-- [ ] T052 [US5] `frontend/index.html` + `duck-states.js`: caption icon inside icon bar, independent of mic icon (depends on T025)
-- [ ] T053 [US5] `frontend/duck.css`: caption box next to duck rendering `gemini` message text
-- [ ] T054 [US5] Manual validation AC5.1/AC5.2
+- [ ] T057 [US5] `frontend/index.html` + `duck-states.js`: caption icon inside icon bar, independent of mic icon (depends on T043)
+- [ ] T058 [US5] `frontend/duck.css`: caption box next to duck rendering `gemini` message text
+- [ ] T059 [US5] Manual validation AC5.1/AC5.2
 
 ---
 
-## Phase 9: User Story 7 - Instalar e testar no GitHub (Priority: P2, runs last)
+## Phase 10: User Story 7 - Instalar e testar no GitHub (Priority: P2, runs last)
 
 **Goal**: Outsider installs and runs from README on macOS/Windows with own key (CS4)
 
@@ -194,24 +225,23 @@
 
 ### Implementation for User Story 7
 
-- [ ] T055 [US7] README: prerequisites, venv, pip/npm install, `.env` with own key, `npm start`, shortcut, troubleshooting (port in use, mic permission, `python` vs `python3`)
-- [ ] T056 [US7] README disclosures: voice sent to Google; free vs paid tier data use; 18+ (Gemini API terms); "duck can be wrong" (R2); own key = own data/billing (A6)
-- [ ] T057 [US7] README section "what the duck cannot do" (C6: no search/screen/code access; hypothesis never verdict)
-- [ ] T058 [US7] Choose repo license (open question Q5) + dead code cleanup + pinned deps check
-- [ ] T059 [US7] Validation: clean install run (CS4)
+- [ ] T060 [US7] README: prerequisites, venv, pip/npm install, `.env` with own key, `npm start`, shortcut, troubleshooting (port in use, mic permission, `python` vs `python3`)
+- [ ] T061 [US7] README disclosures: voice sent to Google; free vs paid tier data use; 18+ (Gemini API terms); "duck can be wrong" (R2); own key = own data/billing (A6)
+- [ ] T062 [US7] README section "what the duck cannot do" (C6: no search/screen/code access; hypothesis never verdict)
+- [ ] T063 [US7] Add MIT LICENSE (PO's pick, 2026-10-12) + dead code cleanup + pinned deps check
+- [ ] T064 [US7] Validation: clean install run (CS4)
 
 ---
 
-## Phase 10: Polish (Final)
+## Phase 11: Polish (Final)
 
 **Purpose**: POC acceptance wrap-up
 
-- [ ] T060 Final duck art: one image per state (Ouvindo, Pensando, Falando, Sem escuta, Sleep com "zzz") + icons (mic, legenda, tray) replacing placeholders — from the Stitch reference (PRD 5.6); re-verify state→image switch with final art (depends on T024, T034)
-- [ ] T061 Record demo video: convocar → explicar → destravar → encerrar, in PT-BR (CS1) (depends on T060)
-- [ ] T062 Measure cost per session from API usage data (CS2; closes open billing question empirically)
-- [ ] T063 Short adversarial safety test: request prohibited/offensive content, record behavior
-- [ ] T064 Long session test: coherence with sliding-window compression (E6)
-- [ ] T065 Full AC checklist pass
+- [ ] T065 Record demo video: convocar → explicar → destravar → encerrar, in PT-BR (CS1)
+- [ ] T066 Measure cost per session from API usage data (CS2; closes open billing question empirically)
+- [ ] T067 Short adversarial safety test: request prohibited/offensive content, record behavior
+- [ ] T068 Long session test: coherence with sliding-window compression (E6)
+- [ ] T069 Full AC checklist pass
 
 ---
 
@@ -220,18 +250,23 @@
 - **Setup → Foundational**: Foundational blocks ALL stories
 - **US1 (P1)**: after Foundational; no story dependencies
 - **US2 (P1)**: after Foundational (e2e test uses US1's summon)
-- **US3 (P2)**: depends on US2 + PRD Q1/Q3 closed
 - **US6 (P2)**: depends on US2 (+US1 shortcut)
-- **US4 (P3)** / **US5 (P3)**: depend on US2 + icon bar (T025); independent of each other
+- **US8 (P2)**: depends on US1 + US2 (avatar mechanism + states); gate: PRD Q1/Q3 closed
+- **US3 (P2)**: depends on US8 (instruction authored there) — runs AFTER US8
+- **US4 (P3)** / **US5 (P3)**: depend on US2 + US8 (icon bar); independent of each other
 - **US7 (P2)**: after all stories included in the public repo
-- **Polish**: after all desired stories; final art (T060) before demo video (T061)
+- **Polish**: after all desired stories
 - Regression rule: after each story, re-run previous stories' independent tests
 
-## Open questions (before implementation plan)
+## Decisões fechadas (respostas da PO, 2026-10-12)
 
-1. Confirm `loadFile` → `loadURL` reversal (Phase 2; only change to an approved decision)
-2. Sleep silence: 120 s OK?
-3. Shortcut: `CmdOrCtrl+Shift+D` OK?
-4. Duck voice: `Puck` (decide in first US2 test session)
-5. Repo license: MIT / Apache-2.0 / none
-6. PRD Q1/Q3 (persona, AC3.7) — product owner closes before Phase 5
+1. ✅ `loadURL` no lugar de `loadFile` — já em vigor (Fase 2 implementada e conectando)
+2. ✅ Silêncio até o sono (E2): **80 s**, variável `SLEEP_AFTER_SECONDS` no `.env`
+3. ✅ Atalho: `CmdOrCtrl+Shift+D` — em vigor no macOS (AC1.1 confirmado); conferir no Windows na US7
+4. ✅ Voz do pato: **Puck**
+5. ✅ Licença do repositório: **MIT**
+
+## Ainda abertas
+
+- **PRD Q1** (persona e falas-chave, seção 5.6): revisão da PO no próprio PRD, antes da Phase 6 (US8)
+- **PRD Q3 / AC3.7** (pato escreve código?): decidida junto com a PO na estruturação da instrução — US8, T046

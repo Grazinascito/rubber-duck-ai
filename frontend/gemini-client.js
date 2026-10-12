@@ -85,6 +85,15 @@
       return true;
     }
 
+    // Raw binary frames: 16 kHz Int16 PCM audio for the Live session.
+    sendBinary(data) {
+      if (this.socket === null || this.socket.readyState !== WebSocket.OPEN) {
+        return false;
+      }
+      this.socket.send(data);
+      return true;
+    }
+
     _emitStatus(status) {
       if (typeof this.onStatusChange === "function") {
         this.onStatusChange(status);
@@ -101,15 +110,8 @@
     }
   }
 
-  const statusElement =
-    typeof document !== "undefined" ? document.getElementById("status") : null;
-  if (statusElement) {
-    const client = new GeminiClient();
-    client.onStatusChange = (status) => {
-      statusElement.textContent = status;
-    };
-    client.connect();
-  }
+  // Connection lifecycle belongs to duck-states.js (open on summon, close on
+  // sleep); this module only auto-runs when loaded under node tests.
 
   return { validateMessage, GeminiClient };
 });
