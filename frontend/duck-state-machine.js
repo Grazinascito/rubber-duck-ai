@@ -45,7 +45,8 @@
           return { status: DUCK_STATES.OUVINDO };
         }
         return { status: DUCK_STATES.OCULTO };
-      // Explicit no-op: the duck is already listening; US8 uses it for art.
+      // Explicit no-op: PRD 5.5 defines no art of its own for "user is
+      // speaking" — the duck stays in OUVINDO either way.
       case "USER_SPEAKING":
         return state;
       case "USER_TURN_END":

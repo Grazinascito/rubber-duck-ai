@@ -5,9 +5,9 @@ from main import app
 client = TestClient(app)
 
 
-def test_serves_the_page_with_the_connection_status_marker_in_desconectado_state():
+def test_serves_the_page_with_the_duck_avatar_and_the_control_pill():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert 'data-testid="connection-status"' in response.text
-    assert "desconectado" in response.text
+    assert 'id="duck-avatar"' in response.text
+    assert 'class="control-pill"' in response.text

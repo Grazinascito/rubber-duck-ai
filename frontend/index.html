@@ -8,11 +8,24 @@
   <body>
     <div id="duck-root" class="duck-root is-oculto">
       <div class="duck" id="duck-body">
-        <img src="/images/duck-idle.png" alt="Pato de borracha" draggable="false" />
-        <p class="duck-status">
-          status:
-          <span id="status" data-testid="connection-status">desconectado</span>
-        </p>
+        <img id="duck-avatar" src="/images/pato.png" alt="Pato de borracha" draggable="false" />
+      </div>
+      <div class="control-pill">
+        <button class="control-btn is-on" type="button" aria-label="Microfone" aria-disabled="true" title="Microfone (chega na US4)">
+          <svg class="icon-mic-live" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+          <svg class="icon-mic-muted" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .05 0 .11 0 .16-.01L14.78 13.6c-.57.38-1.25.6-1.98.6-1.98 0-3.58-1.62-3.58-3.6h-1.7c0 2.51 1.9 4.59 4.33 4.88V21h1.7v-5.12c.63-.08 1.22-.28 1.75-.56L19.73 21 21 19.73 4.27 3z"/>
+          </svg>
+        </button>
+        <span class="control-divider"></span>
+        <button class="control-btn is-off" type="button" aria-label="Legendas" aria-disabled="true" title="Legendas (chega na US5)">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm3 7a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"/>
+          </svg>
+        </button>
       </div>
     </div>
     <script src="gemini-client.js"></script>

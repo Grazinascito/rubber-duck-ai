@@ -36,12 +36,35 @@
     return new Int16Array(bytes.buffer);
   }
 
+  // One image per visible state (PRD 5.5); the avatar src is always derived
+  // from the state, never set from elsewhere.
+  const STATE_IMAGES = Object.freeze({
+    [stateMachine.DUCK_STATES.OUVINDO]: "/images/pato.png",
+    [stateMachine.DUCK_STATES.PENSANDO]: "/images/pato-thinking.png",
+    [stateMachine.DUCK_STATES.FALANDO]: "/images/pato.png",
+    [stateMachine.DUCK_STATES.SLEEP]: "/images/pato-sleep.png",
+  });
+
+  function imageForState(status) {
+    const image = STATE_IMAGES[status];
+    return image === undefined ? null : image;
+  }
+
   function renderDuck(rootEl, state) {
     rootEl.classList.toggle(
       "is-oculto",
       state.status === stateMachine.DUCK_STATES.OCULTO
     );
     rootEl.dataset.status = state.status;
+    const image = imageForState(state.status);
+    const avatarEl = rootEl.querySelector("#duck-avatar");
+    if (
+      avatarEl !== null &&
+      image !== null &&
+      avatarEl.getAttribute("src") !== image
+    ) {
+      avatarEl.setAttribute("src", image);
+    }
   }
 
   function initDuck(rootEl) {
@@ -54,14 +77,10 @@
     const client = new geminiClientModule.GeminiClient();
     const mic = new micModule.MicAndSpeaker();
 
-    const statusEl =
-      typeof document !== "undefined"
-        ? document.getElementById("status")
-        : null;
     client.onStatusChange = (status) => {
-      if (statusEl !== null) {
-        statusEl.textContent = status;
-      }
+      // Connection state lives in the terminal only (PO decision): the UI
+      // shows no badge.
+      console.log("[duck] conexão:", status);
     };
     client.onMessage = handleEnvelope;
 
@@ -175,5 +194,5 @@
     initDuck(rootEl);
   }
 
-  return { renderDuck, initDuck };
+  return { renderDuck, initDuck, imageForState };
 });

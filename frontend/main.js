@@ -59,22 +59,23 @@ async function waitForHealth(timeoutMs = 15000) {
   }
 }
 
-const DUCK_WINDOW_SIZE = 160;
+const DUCK_WINDOW_WIDTH = 160;
+const DUCK_WINDOW_HEIGHT = 250;
 const DUCK_WINDOW_MARGIN = 16;
 
 function duckWindowPosition() {
   const workArea = screen.getPrimaryDisplay().workArea;
   return {
-    x: workArea.x + workArea.width - DUCK_WINDOW_SIZE - DUCK_WINDOW_MARGIN,
-    y: workArea.y + workArea.height - DUCK_WINDOW_SIZE - DUCK_WINDOW_MARGIN,
+    x: workArea.x + workArea.width - DUCK_WINDOW_WIDTH - DUCK_WINDOW_MARGIN,
+    y: workArea.y + workArea.height - DUCK_WINDOW_HEIGHT - DUCK_WINDOW_MARGIN,
   };
 }
 
 function createWindow() {
   const { x, y } = duckWindowPosition();
   duckWindow = new BrowserWindow({
-    width: DUCK_WINDOW_SIZE,
-    height: DUCK_WINDOW_SIZE,
+    width: DUCK_WINDOW_WIDTH,
+    height: DUCK_WINDOW_HEIGHT,
     x,
     y,
     transparent: true,
@@ -92,6 +93,12 @@ function createWindow() {
     },
   });
   duckWindow.loadURL(SERVER_URL);
+  // The UI shows no connection badge (PO decision): renderer console lines
+  // are forwarded so connection state stays visible in the terminal where
+  // npm start runs.
+  duckWindow.webContents.on("console-message", (_event, _level, message) => {
+    console.log(`[renderer] ${message}`);
+  });
 }
 
 const MOUSE_POLL_INTERVAL_MS = 50;

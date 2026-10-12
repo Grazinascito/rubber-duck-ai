@@ -2,7 +2,7 @@ html,
 body {
   margin: 0;
   width: 160px;
-  height: 160px;
+  height: 250px;
   overflow: hidden;
   background: transparent;
   font-family: system-ui, sans-serif;
@@ -12,33 +12,113 @@ body {
   display: none;
 }
 
-.duck {
-  -webkit-app-region: drag;
+.duck-root {
   box-sizing: border-box;
-  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.duck {
+  -webkit-app-region: drag;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   user-select: none;
 }
 
+/* The duck art is portrait (395×586): fix the width and let the height
+   follow the file's aspect ratio — a fixed height would squash it. */
 .duck img {
   width: 128px;
-  height: 128px;
+  height: auto;
 }
 
-.duck-status {
+/* Control pill: always visible below the duck; mic and captions stay
+   inert until US4/US5 wire them. */
+.control-pill {
+  height: 36px;
+  padding: 0 12px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06);
   -webkit-app-region: no-drag;
-  margin: 0;
-  font-size: 10px;
+  /* The duck's visible body is left-weighted inside its art canvas
+     (alpha bbox x [8,315] of 395): its center sits at ~68px in the 160px
+     window, so the pill shifts left to line up with it. */
+  transform: translateX(-12px);
 }
 
-.duck-status #status {
-  font-weight: 600;
-  padding: 0.25em 0.75em;
-  border-radius: 999px;
-  background: #fde8e8;
-  color: #9b1c1c;
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.control-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.control-btn.is-on {
+  color: #f59e0b;
+  transition: opacity 0.15s;
+}
+
+.control-btn.is-on:hover {
+  opacity: 0.9;
+}
+
+.control-btn.is-off {
+  color: #94a3b8;
+  transition: color 0.15s;
+}
+
+.control-btn.is-off:hover {
+  color: #475569;
+}
+
+/* Muted mic: same treatment as is-off, but swaps to the mic_off glyph.
+   US4 flips is-on <-> is-muted when muting for real. */
+.control-btn.is-muted {
+  color: #94a3b8;
+  transition: color 0.15s;
+}
+
+.control-btn.is-muted:hover {
+  color: #475569;
+}
+
+.control-btn .icon-mic-muted {
+  display: none;
+}
+
+.control-btn.is-muted .icon-mic-live {
+  display: none;
+}
+
+.control-btn.is-muted .icon-mic-muted {
+  display: block;
+}
+
+.control-divider {
+  width: 1px;
+  height: 14px;
+  background: #cbd5e1;
 }

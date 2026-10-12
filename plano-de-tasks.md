@@ -34,7 +34,7 @@
 
 - [ ] T007 [P] Contract test `/health` returns 200 in `tests/test_health.py`
 - [ ] ~~T008 [P] Integration test WS echo (JSON in → `echo` out) in `tests/test_ws_echo.py`~~ **removido na US2**: o echo foi substituído pela sessão real; `/ws` passa a ser coberto por T027
-- [ ] T009 [P] Test static page contains connection marker in `tests/test_static.py`
+- [ ] T009 [P] Test static page serves the duck UI in `tests/test_static.py` — **emendado (PO, 2026-10-12)**: o marcador de conexão saiu da página (vira log no terminal, encaminhado pelo main); o teste agora cobre avatar + control-pill
 
 ### Implementation for Foundational
 
@@ -58,17 +58,17 @@
 
 ### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T017 [P] [US1] Unit test state machine Oculto↔Visível on summon/dismiss in `frontend/duck-state-machine.test.js`
+- [x] T017 [P] [US1] Unit test state machine Oculto↔Visível on summon/dismiss in `frontend/duck-state-machine.test.js`
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Create `frontend/duck-state-machine.js` — pure reducer, states Oculto/Visível (depends on T017)
-- [ ] T019 [US1] `frontend/main.js`: floating window (`transparent`, `frame: false`, `hasShadow: false`, `alwaysOnTop`, corner position)
-- [ ] T020 [US1] `frontend/main.js`: `globalShortcut` `CmdOrCtrl+Shift+D` toggle + IPC notify via preload
-- [ ] T021 [US1] `frontend/duck.css` + `index.html`: drag region on duck, transparent body
-- [ ] T022 [US1] `frontend/main.js`: click-through via `setIgnoreMouseEvents(true, {forward: true})` + mouseenter/mouseleave
-- [ ] T023 [US1] `frontend/main.js`: tray icon with Summon/Quit
-- [ ] T024 [US1] `frontend/duck-states.js` + `index.html`: `<img id="duck-avatar">` rendered as function of state, single placeholder image in `frontend/images/`
+- [x] T018 [US1] Create `frontend/duck-state-machine.js` — pure reducer, states Oculto/Visível (depends on T017)
+- [x] T019 [US1] `frontend/main.js`: floating window (`transparent`, `frame: false`, `hasShadow: false`, `alwaysOnTop`, corner position)
+- [x] T020 [US1] `frontend/main.js`: `globalShortcut` `CmdOrCtrl+Shift+D` toggle + IPC notify via preload
+- [x] T021 [US1] `frontend/duck.css` + `index.html`: drag region on duck, transparent body
+- [x] T022 [US1] `frontend/main.js`: click-through via `setIgnoreMouseEvents(true, {forward: true})` + mouseenter/mouseleave
+- [x] T023 [US1] `frontend/main.js`: tray icon with Summon/Quit
+- [x] T024 [US1] `frontend/duck-states.js` + `index.html`: `<img id="duck-avatar">` rendered as function of state, single placeholder image in `frontend/images/`
 - [ ] T025 [US1] Manual validation AC1.1–AC1.3 (macOS) + AC1.4 Windows smoke
 
 **Checkpoint**: US1 works alone; foundation still green
@@ -83,20 +83,20 @@
 
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T026 [P] [US2] Unit test event→message mapping (`interrupted`, `turn_complete`, `gemini`, `user`) in `tests/test_message_mapping.py`
-- [ ] T027 [P] [US2] Integration test `/ws` with stubbed Gemini session (audio reaches session; greeting trigger fired) in `tests/test_ws_route.py`
-- [ ] T028 [P] [US2] Unit test pure sleep decision (`should_sleep(last_utterance, now, timeout)`) in `tests/test_sleep_decision.py`
+- [x] T026 [P] [US2] Unit test event→message mapping (`interrupted`, `turn_complete`, `gemini`, `user`) in `tests/test_message_mapping.py`
+- [x] T027 [P] [US2] Integration test `/ws` with stubbed Gemini session (audio reaches session; greeting trigger fired) in `tests/test_ws_route.py`
+- [x] T028 [P] [US2] Unit test pure sleep decision (`should_sleep(last_utterance, now, timeout)`) in `tests/test_sleep_decision.py`
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Create `gemini_live.py`: `client.aio.live.connect` + `LiveConnectConfig` (model from env, `response_modalities=["AUDIO"]`, voice `Puck`, input/output transcription, sliding-window compression, session resumption, safety default) (depends on T026–T028)
-- [ ] T030 [US2] `main.py`: `/ws` real session — audio bytes ↔ session, JSON messages out, resumption handle kept, single reconnect on GoAway
+- [x] T029 [US2] Create `gemini_live.py`: `client.aio.live.connect` + `LiveConnectConfig` (model from env, `response_modalities=["AUDIO"]`, voice `Puck`, input/output transcription, sliding-window compression, session resumption, safety default) (depends on T026–T028)
+- [x] T030 [US2] `main.py`: `/ws` real session — audio bytes ↔ session, JSON messages out, resumption handle kept, single reconnect on GoAway
 - [ ] ~~T031 [US2] `main.py`: greeting trigger on connect (client-content marker "[convocação]")~~ **removido (PO, 2026-10-12, PRD v1.7)**: o pato nunca inicia a conversa — a sessão abre apenas escutando; quem fala primeiro é a usuária
-- [ ] T032 [US2] Create `frontend/microphone-and-speaker.js` + `frontend/pcm-processor.js`: capture with explicit constraints (`echoCancellation` etc.), 16 kHz Int16 stream, 24 kHz queued playback, `interrupted` → stop playback
-- [ ] T033 [US2] `frontend/duck-states.js`: Ouvindo/Pensando/Falando/Sleep states from messages + sleep closes WS (depends on T024)
-- [ ] T034 [US2] `main.py`: backend idle timer 80 s (env-configurable, `SLEEP_AFTER_SECONDS`) since last user utterance → `sleep` message + session close
-- [ ] T035 [US2] `frontend/main.js`: macOS mic permission (`systemPreferences.askForMediaAccess('microphone')`)
-- [ ] T036 [US2] Manual validation AC2.1–AC2.3 (voice, context, interruption, sleep)
+- [x] T032 [US2] Create `frontend/microphone-and-speaker.js` + `frontend/pcm-processor.js`: capture with explicit constraints (`echoCancellation` etc.), 16 kHz Int16 stream, 24 kHz queued playback, `interrupted` → stop playback
+- [x] T033 [US2] `frontend/duck-states.js`: Ouvindo/Pensando/Falando/Sleep states from messages + sleep closes WS (depends on T024)
+- [x] T034 [US2] `main.py`: backend idle timer 80 s (env-configurable, `SLEEP_AFTER_SECONDS`) since last user utterance → `sleep` message + session close
+- [x] T035 [US2] `frontend/main.js`: macOS mic permission (`systemPreferences.askForMediaAccess('microphone')`)
+- [x] T036 [US2] Manual validation AC2.1–AC2.3 (voice, context, interruption, sleep)
 
 **Decisões US2 (revisão de código 2026-10-12, spec↔código alinhados):**
 - **Saudação removida (PO, 2026-10-12, PRD v1.7)**: quem inicia a comunicação é a usuária (P6 sem exceção); instrução placeholder (`DUCK_INSTRUCTION` em `gemini_live.py`) proíbe sons de pato/quack — persona final na US8/T046
@@ -110,48 +110,33 @@
 
 ---
 
-## Phase 5: User Story 6 - Encerrar a sessão (Priority: P2)
+## Phase 5: ~~User Story 6 - Encerrar a sessão~~ (DISSOLVIDA — PO, 2026-10-12)
 
-**Goal**: Command ends session: short farewell, duck leaves screen, nothing captured after (privacy AC6.2)
+**Motivo**: a US2 já entregou o teardown completo — o atalho durante a conversa para playback/captura, fecha o WS e esconde o pato (`frontend/duck-states.js`: `closeSession` + handler do atalho); privacidade AC6.2 fechada. Sem farewell em áudio local. "Encerrado" deixa de ser estado (todo encerramento leva a Oculto); T037–T041 removidas. F7/AC6.x do PRD ajustados no redraft v1.8 (junto com o 5.6).
 
-**Independent Test**: during conversation, press end command → farewell plays, duck disappears, system mic indicator drops
-
-### Tests for User Story 6 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T037 [P] [US6] Unit test state machine: active states → Encerrado on end event; no capture state after
-
-### Implementation for User Story 6
-
-- [ ] T038 [US6] Same global shortcut ends active session (toggle summon/dismiss) (depends on T020)
-- [ ] T039 [US6] `frontend/duck-states.js`: teardown sequence — stop playback → `stop()` tracks → close WS → play local farewell audio → Oculto
-- [ ] T040 [US6] Add farewell sound asset in `frontend/images/` (local audio, no API turn — deterministic, zero cost)
-- [ ] T041 [US6] Manual validation AC6.1/AC6.2 (macOS mic indicator after end)
-
-**Checkpoint**: full Fluxo A (convocar → conversar → encerrar) with privacy closed
+**Checkpoint**: absorvido pela US2 (atalho encerra a sessão e o pato some)
 
 ---
 
 ## Phase 6: User Story 8 - Identidade do pato: visual e fala (Priority: P2) 🆕
 
-**Goal**: The duck's identity in one place: one image per state (all states from PRD 5.5, including Sem escuta and Sleep "zzz"), icon bar below the duck (hover, holds future mic/caption icons), final art from the Stitch reference, and the duck's system instruction (`duck_instruction.py` from PRD 5.6 — persona, falas-chave, saudação on summon marker)
+**Goal**: The duck's identity in one place: one image per state (estados do PRD 5.5 com arte: Ouvindo, Pensando, Falando, Sleep "zzz"; Sem escuta usa a arte base — o indicador de mudo chega com o toggle na US4), icon bar below the duck (hover, holds future mic/caption icons), arte final da PO (assets em `frontend/images/`), and the duck's system instruction (`duck_instruction.py` from PRD 5.6 — persona, falas-chave)
 
-**Independent Test**: unit-test drive the state machine through all states → each maps to its image file; hover the duck → icon bar appears below; summon → greeting matches the PRD falas-chave
+**Independent Test**: unit-test drive the state machine through all states → each maps to its image file; hover the duck → icon bar appears below; conversa curta → falas seguem as falas-chave do PRD (ensaio A5)
 
-**⚠️ Requires PRD pending Q1 (persona/falas) closed by product owner first. Q3 (AC3.7) is decided while structuring the instruction in T046 (PO's call, 2026-10-12: "vamos ver na hora de estruturar")**
-
-**Note**: Sem escuta art ships here; the toggle that enters that state arrives in US4
+**⚠️ Gate T046: ajustes da PO no PRD 5.6 primeiro (ela manda as mudanças → redraft v1.8 → aprovação). Q3/AC3.7 fechado (PO, 2026-10-12): o pato não escreve código por você — hipótese sempre em conceito. No redraft também se decide se a fala "Despedida" fica (inalcançável sem a US6)**
 
 ### Tests for User Story 8 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T042 [P] [US8] Unit test `imageForState` maps every PRD 5.5 state to an existing image file (null for Oculto/Encerrado) in `frontend/duck-state-machine.test.js`
+- [x] T042 [P] [US8] Unit test `imageForState` in `frontend/duck-states.test.js` — OUVINDO→`pato.png`, PENSANDO→`pato-thinking.png`, FALANDO→`pato.png`, SLEEP→`pato-sleep.png`; null para Oculto (sem Encerrado — US6 dissolvida); arquivos existem em disco
 
 ### Implementation for User Story 8
 
-- [ ] T043 [US8] `frontend/index.html` + `duck.css`: icon-bar container below the duck — appears on hover, `no-drag`, empty (mic icon in US4, caption icon in US5)
-- [ ] T044 [US8] `frontend/duck-states.js`: `imageForState` mapping wired into the render function (depends on T024, T033, T042)
-- [ ] T045 [US8] Placeholder art set per state + icon glyphs (mic, legenda, tray) in `frontend/images/`
-- [ ] T046 [US8] Create `duck_instruction.py`: instruction from PRD 5.6 (persona, falas-chave, question bank, user's language); Q3/AC3.7 decided here with the PO; plugs into `LiveConnectConfig` (depends on T029, gate Q1)
-- [ ] T047 [US8] Final duck art from Stitch reference (PRD 5.6) replacing placeholders; re-verify state→image switch (depends on T044, T045)
+- [x] T043 [US8] `frontend/index.html` + `duck.css`: icon-bar container below the duck — **emendado (PO, 2026-10-12)**: pílula `control-pill` SEMPRE visível (não só no hover), com o design dela (mic `is-on` âmbar, legendas `is-off` cinza, divisor, glass), SVG inline; botões seguem inertes até US4/US5
+- [x] T044 [US8] `frontend/duck-states.js`: `imageForState` mapping wired into the render function; `id="duck-avatar"` no img; placeholders antigos (`duck-idle.png`, `generate-placeholders.py`) removidos (depends on T024, T033, T042)
+- [x] T045 [US8] **cumprido pelos assets da PO (2026-10-12)**: `pato.png` / `pato-thinking.png` / `pato-sleep.png` em `frontend/images/` (set consistente, fundo transparente; Sem escuta = arte base; ícones da icon bar = emoji até US4/US5)
+- [ ] T046 [US8] GATED: redraft do PRD 5.6 (v1.8) primeiro → criar `duck_instruction.py` (persona, falas-chave, question bank, idioma; Q3 mantido: nunca código pronto) → plugar no `LiveConnectConfig` via import em `gemini_live.py` (depends on T029, gate 5.6)
+- [x] T047 [US8] **cumprido pelos assets da PO** (substitui a referência Stitch); troca estado→imagem verificada via T042
 - [ ] T048 [US8] Manual validation: visual checklist per state + greeting/falas-chave read-through (ensaio curto, A5)
 
 **Checkpoint**: duck has full identity — per-state visuals, icon bar, final art, persona/falas loaded
@@ -179,20 +164,25 @@
 
 ## Phase 8: User Story 4 - Desligar a escuta (Priority: P3)
 
-**Goal**: Mic icon toggles listening with permanent on-avatar mute indicator; re-enable plays "Quack!" (E8/D11)
+**Goal**: Mic icon toggles listening with permanent on-avatar mute indicator; re-enable plays "Quack!" (E8/D11). NEW (PO, 2026-10-12): dragging the sleeping duck wakes it — mic reopens with the new session
 
-**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → "Quack!" and conversation resumes
+**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → "Quack!" and conversation RESUMES in the SAME session (sleep timer paused while muted — decision #11); sleeping duck → drag it → duck wakes listening (mic dot on)
 
 ### Tests for User Story 4 (OPTIONAL - only if tests requested) ⚠️
 
 - [ ] T051 [P] [US4] Unit test state machine: enter/exit "Sem escuta"; indicator derived from state
+- [ ] T070 [P] [US4] Unit test state machine: `DUCK_GRABBED` in SLEEP → wake (mesma transição do atalho); em estados ativos/mutados → sem mudança de estado (arrastar NUNCA desmuta)
 
 ### Implementation for User Story 4
 
-- [ ] T052 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T043)
+- [ ] T052 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T043) — estados visuais prontos na US8 (2026-10-12): `is-on` âmbar / `is-muted` cinza + glyph `mic_off`; US4 só alterna a classe no mudo real
 - [ ] T053 [US4] `frontend/microphone-and-speaker.js`: mute = `stop()` tracks; unmute = new `getUserMedia` with same constraints
 - [ ] T054 [US4] Mute indicator overlay on avatar while disabled + local `quack.mp3` on re-enable
-- [ ] T055 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test)
+- [ ] T071 [US4] `frontend/main.js`: arrasto-acorda — listener de movimento da janela (verificar `move` × `moved` por plataforma, spike 15 min) enquanto SLEEP → dispara o caminho de wake existente (IPC p/ renderer)
+- [ ] T072 [US4] `frontend/duck-states.js`: rotear o wake-por-arrasto como o do atalho; arrasto não desmuta pato acordado; **sem clique-no-pato** (cliques em região de arrasto são não-confiáveis no Electron — decisão 2026-10-12)
+- [ ] T055 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test) + arrasto-acorda do SLEEP (mic liga ao acordar)
+- [ ] T073 [US4] `main.py`: receber `{"type":"muted","value":true|false}` do cliente → **pausar o watchdog de sono enquanto mutado** e retomar ao desmutar (decisão #11: mudo explícito mantém a sessão viva — custo ~zero, sem áudio enviado; sono só dispara por inatividade com microfone ligado)
+- [ ] T074 [P] [US4] Test in `tests/test_ws_route.py`: watchdog NÃO dispara enquanto `muted`; após desmutar + timeout, dispara
 
 ---
 
@@ -251,8 +241,8 @@
 - **Setup → Foundational**: Foundational blocks ALL stories
 - **US1 (P1)**: after Foundational; no story dependencies
 - **US2 (P1)**: after Foundational (e2e test uses US1's summon)
-- **US6 (P2)**: depends on US2 (+US1 shortcut)
-- **US8 (P2)**: depends on US1 + US2 (avatar mechanism + states); gate: PRD Q1/Q3 closed
+- **US6**: dissolvida (2026-10-12) — teardown absorvido pela US2; sem farewell local
+- **US8 (P2)**: depends on US1 + US2 (avatar mechanism + states); gate: ajustes da PO no 5.6 (Q3 fechado: pato não escreve código)
 - **US3 (P2)**: depends on US8 (instruction authored there) — runs AFTER US8
 - **US4 (P3)** / **US5 (P3)**: depend on US2 + US8 (icon bar); independent of each other
 - **US7 (P2)**: after all stories included in the public repo
@@ -266,8 +256,13 @@
 3. ✅ Atalho: `CmdOrCtrl+Shift+D` — em vigor no macOS (AC1.1 confirmado); conferir no Windows na US7
 4. ✅ Voz do pato: **Puck**
 5. ✅ Licença do repositório: **MIT**
+6. ✅ US6 dissolvida (2026-10-12): teardown já entregue pela US2; sem farewell em áudio local; "Encerrado" deixa de existir
+7. ✅ Q3/AC3.7 mantido (2026-10-12): o pato não escreve código por você; hipótese sempre em conceito
+8. ✅ Arte final da US8: assets da PO (`pato.png`, `pato-thinking.png`, `pato-sleep.png`) substituem placeholders e a referência Stitch
+9. ✅ Badge de conexão sai da UI; estado de conexão só no terminal (PO, 2026-10-12). Pílula de controles sempre visível com o design da PO (mic âmbar / legendas cinza)
+10. ✅ **Arrasto-acorda (PO, 2026-10-12, parte da US4 — T070–T072):** arrastar o pato no estado SLEEP acorda (mic liga com a sessão nova); arrastar pato acordado NUNCA desmuta (gesto frequente, dessilêncio acidental); sem clique-no-pato (região de arrasto não entrega clique confiável no Electron). Voz-wake ("ei pato") rejeitado para a POC: exigiria microfone sempre ativo (custo/privacidade/dependência) — candidato de MVP
+11. ✅ **Mudo explícito ≠ silêncio (PO, 2026-10-12, US4 — T073/T074):** mutar pelo ícone mantém a sessão viva indefinidamente (pausa declarada; custo ~zero — sem áudio enviado, nenhum token). O sono (E2) só dispara por inatividade **com microfone ligado**. O backend passa a saber do mudo (mensagem `muted` no WS) e pausa o watchdog. A tabela de estados do PRD já dizia isso ("Sem escuta" sai por toggle ou encerramento) — v1.8 só ganha uma linha de esclarecimento
 
 ## Ainda abertas
 
-- **PRD Q1** (persona e falas-chave, seção 5.6): revisão da PO no próprio PRD, antes da Phase 6 (US8)
-- **PRD Q3 / AC3.7** (pato escreve código?): decidida junto com a PO na estruturação da instrução — US8, T046
+- **PRD Q1** (persona e falas-chave, seção 5.6): PO manda os ajustes → agente redige a v1.8 → aprovação antes do T046 (US8); no mesmo redraft decide-se se a fala "Despedida" fica (inalcançável sem US6). O redraft v1.8 também inclui: (a) a linha de produto do arrasto-acorda — saída do estado Sleep passa a ser "convocação por atalho **ou por arrasto do pato**" (tabela 5.5 + E2); (b) esclarecimento de uma linha em E2/tabela: o sono vale só para inatividade com microfone ligado — "Sem escuta" (mudo) mantém a sessão até toggle ou encerramento (decisão #11)

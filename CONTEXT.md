@@ -19,12 +19,24 @@ Os estados do pato. Oculto: ausente da tela, janela escondida, sem interação,
 nada é captado. Ouvindo: presente no canto, arrastável, escutando a usuária.
 Pensando: transitório entre a usuária parar de falar e o pato responder.
 Falando: enunciando (pergunta, hipótese ou pedido). Sleep: ver Sleep. Sem
-escuta e Encerrado entram em US4 e US6.
+escuta entra na US4 (arte: a base do pato + indicador de mudo). Encerrado
+deixou de existir: toda forma de encerrar leva a Oculto (US6 dissolvida em
+2026-10-12).
 _Avoid_: escondido/mostrado, aberto/fechado, minimizado, toggle, visível.
 
-**Marcador de conexão**:
-O elemento da página que exibe se o pato está "conectado" ou "desconectado"
-do servidor.
+**Falas-chave**:
+O repertório fixo de falas do pato por situação canônica (curiosidade,
+adiamento, hipótese, comemoração…), definido no PRD.
+_Avoid_: script, respostas prontas, saudação.
+
+**Barra de ícones**:
+A pílula de botões sempre visível abaixo do pato; comporta o microfone
+(US4) e a legenda (US5).
+_Avoid_: toolbar, menu, dock.
+
+**Registro de conexão**:
+A linha de log no terminal que informa se o pato está "conectado" ou
+"desconectado" do servidor. Não existe elemento de conexão na interface.
 _Avoid_: badge de status, indicador.
 
 **Sessão**:
