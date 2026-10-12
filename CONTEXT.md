@@ -18,11 +18,17 @@ _Avoid_: abrir/fechar, mostrar/esconder, toggle.
 Os estados do pato. Oculto: ausente da tela, janela escondida, sem interação,
 nada é captado. Ouvindo: presente no canto, arrastável, escutando a usuária.
 Pensando: transitório entre a usuária parar de falar e o pato responder.
-Falando: enunciando (pergunta, hipótese ou pedido). Sleep: ver Sleep. Sem
-escuta entra na US4 (arte: a base do pato + indicador de mudo). Encerrado
-deixou de existir: toda forma de encerrar leva a Oculto (US6 dissolvida em
-2026-10-12).
+Falando: enunciando (pergunta, hipótese ou pedido). Sleep: ver Sleep.
+Encerrado deixou de existir: toda forma de encerrar leva a Oculto (US6
+dissolvida em 2026-10-12).
 _Avoid_: escondido/mostrado, aberto/fechado, minimizado, toggle, visível.
+
+**Sem escuta**:
+A condição de um estado ativo com o microfone desligado: a arte é a base do
+pato e o botão de microfone da barra de ícones fica desligado. A sessão
+continua viva — silêncio forçado não é inatividade — e a condição sai por
+toggle ou encerramento.
+_Avoid_: mutado, mudo (como nome de estado).
 
 **Falas-chave**:
 O repertório fixo de falas do pato por situação canônica (curiosidade,
@@ -60,8 +66,9 @@ na reconexão única após o servidor anunciar GoAway.
 _Avoid_: token de sessão (genérico), id de reconexão.
 
 **Sleep**:
-Estado após silêncio longo: a sessão encerra, o microfone desliga e o pato
-permanece na tela dormindo (olhos fechados, "zzz") até nova convocação, que
-abre sessão nova.
+Estado após silêncio longo com o microfone ligado: a sessão encerra, o
+microfone desliga e o pato permanece na tela dormindo (olhos fechados, "zzz")
+até nova convocação — por atalho, arrasto do pato ou botão do microfone —,
+que abre sessão nova.
 _Avoid_: standby, pausa, timeout (o timeout é a duração do silêncio, não o
 estado).

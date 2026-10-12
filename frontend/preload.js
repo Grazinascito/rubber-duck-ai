@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld("duckApi", {
   onShortcutPressed: (callback) =>
     ipcRenderer.on("shortcut:pressed", () => callback()),
   onTraySummon: (callback) => ipcRenderer.on("tray:summon", () => callback()),
+  onDuckMoved: (callback) => ipcRenderer.on("duck:moved", () => callback()),
 });

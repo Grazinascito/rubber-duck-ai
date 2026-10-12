@@ -164,25 +164,25 @@
 
 ## Phase 8: User Story 4 - Desligar a escuta (Priority: P3)
 
-**Goal**: Mic icon toggles listening with permanent on-avatar mute indicator; re-enable plays "Quack!" (E8/D11). NEW (PO, 2026-10-12): dragging the sleeping duck wakes it — mic reopens with the new session
+**Goal**: Mic icon toggles listening with permanent mute indicator; re-enable silently reopens the mic (no sound — decision #12). NEW (PO, 2026-10-12): dragging the sleeping duck wakes it — mic reopens with the new session
 
-**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → "Quack!" and conversation RESUMES in the SAME session (sleep timer paused while muted — decision #11); sleeping duck → drag it → duck wakes listening (mic dot on)
+**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → conversation RESUMES in the SAME session, no sound played (sleep timer paused while muted — decision #11); sleeping duck → drag it → duck wakes listening (mic dot on)
 
 ### Tests for User Story 4 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T051 [P] [US4] Unit test state machine: enter/exit "Sem escuta"; indicator derived from state
-- [ ] T070 [P] [US4] Unit test state machine: `DUCK_GRABBED` in SLEEP → wake (mesma transição do atalho); em estados ativos/mutados → sem mudança de estado (arrastar NUNCA desmuta)
+- [x] T051 [P] [US4] Unit test state machine: enter/exit "Sem escuta"; indicator derived from state
+- [x] T070 [P] [US4] Unit test state machine: `DUCK_GRABBED` in SLEEP → wake (mesma transição do atalho); em estados ativos/mutados → sem mudança de estado (arrastar NUNCA desmuta)
 
 ### Implementation for User Story 4
 
-- [ ] T052 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T043) — estados visuais prontos na US8 (2026-10-12): `is-on` âmbar / `is-muted` cinza + glyph `mic_off`; US4 só alterna a classe no mudo real
-- [ ] T053 [US4] `frontend/microphone-and-speaker.js`: mute = `stop()` tracks; unmute = new `getUserMedia` with same constraints
-- [ ] T054 [US4] Mute indicator overlay on avatar while disabled + local `quack.mp3` on re-enable
-- [ ] T071 [US4] `frontend/main.js`: arrasto-acorda — listener de movimento da janela (verificar `move` × `moved` por plataforma, spike 15 min) enquanto SLEEP → dispara o caminho de wake existente (IPC p/ renderer)
-- [ ] T072 [US4] `frontend/duck-states.js`: rotear o wake-por-arrasto como o do atalho; arrasto não desmuta pato acordado; **sem clique-no-pato** (cliques em região de arrasto são não-confiáveis no Electron — decisão 2026-10-12)
+- [x] T052 [US4] `frontend/index.html` + `duck-states.js`: mic icon inside icon bar, toggles listening (depends on T043) — estados visuais prontos na US8 (2026-10-12): `is-on` âmbar / `is-muted` cinza + glyph `mic_off`; US4 só alterna a classe no mudo real
+- [x] T053 [US4] `frontend/microphone-and-speaker.js`: mute = `stop()` tracks; unmute = new `getUserMedia` with same constraints
+- [x] T054 [US4] Mute indicator: pílula sempre visível com `is-muted` + glyph `mic_off` (PO confirmou que o CSS/SVG da US8 bastam — sem overlay no avatar). ~~Local `quack.mp3` ao religar~~ — **sem som ao religar** (decisão #12)
+- [x] T071 [US4] `frontend/main.js`: arrasto-acorda — listener de movimento da janela (verificar `move` × `moved` por plataforma, spike 15 min) enquanto SLEEP → dispara o caminho de wake existente (IPC p/ renderer)
+- [x] T072 [US4] `frontend/duck-states.js`: rotear o wake-por-arrasto como o do atalho; arrasto não desmuta pato acordado; **sem clique-no-pato** (cliques em região de arrasto são não-confiáveis no Electron — decisão 2026-10-12)
 - [ ] T055 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test) + arrasto-acorda do SLEEP (mic liga ao acordar)
-- [ ] T073 [US4] `main.py`: receber `{"type":"muted","value":true|false}` do cliente → **pausar o watchdog de sono enquanto mutado** e retomar ao desmutar (decisão #11: mudo explícito mantém a sessão viva — custo ~zero, sem áudio enviado; sono só dispara por inatividade com microfone ligado)
-- [ ] T074 [P] [US4] Test in `tests/test_ws_route.py`: watchdog NÃO dispara enquanto `muted`; após desmutar + timeout, dispara
+- [x] T073 [US4] `main.py`: receber `{"type":"muted","payload":{"value":true|false}}` do cliente → **pausar o watchdog de sono enquanto mutado** e retomar ao desmutar (decisão #11: mudo explícito mantém a sessão viva — custo ~zero, sem áudio enviado; sono só dispara por inatividade com microfone ligado) — **emendado (PO, 2026-10-12)**: shape com `payload`, conforme o envelope do CONTEXT.md (code review)
+- [x] T074 [P] [US4] Test in `tests/test_ws_route.py`: watchdog NÃO dispara enquanto `muted`; após desmutar + timeout, dispara
 
 ---
 
@@ -262,7 +262,8 @@
 9. ✅ Badge de conexão sai da UI; estado de conexão só no terminal (PO, 2026-10-12). Pílula de controles sempre visível com o design da PO (mic âmbar / legendas cinza)
 10. ✅ **Arrasto-acorda (PO, 2026-10-12, parte da US4 — T070–T072):** arrastar o pato no estado SLEEP acorda (mic liga com a sessão nova); arrastar pato acordado NUNCA desmuta (gesto frequente, dessilêncio acidental); sem clique-no-pato (região de arrasto não entrega clique confiável no Electron). Voz-wake ("ei pato") rejeitado para a POC: exigiria microfone sempre ativo (custo/privacidade/dependência) — candidato de MVP
 11. ✅ **Mudo explícito ≠ silêncio (PO, 2026-10-12, US4 — T073/T074):** mutar pelo ícone mantém a sessão viva indefinidamente (pausa declarada; custo ~zero — sem áudio enviado, nenhum token). O sono (E2) só dispara por inatividade **com microfone ligado**. O backend passa a saber do mudo (mensagem `muted` no WS) e pausa o watchdog. A tabela de estados do PRD já dizia isso ("Sem escuta" sai por toggle ou encerramento) — v1.8 só ganha uma linha de esclarecimento
+12. ✅ **Sem quack nenhum (PO, 2026-10-12):** nenhum som de quack existe no produto. E8/D11 (Quack! ao religar o microfone) **revogado** — a confirmação de que a escuta voltou é o indicador visual (pílula âmbar `is-on`). As falas "Quack! Foi você que achou" (comemoração) e "Quack. Boa sessão" (despedida) saem no redraft v1.8 do PRD (E8, falas-chave 5.6 e D11)
 
 ## Ainda abertas
 
-- **PRD Q1** (persona e falas-chave, seção 5.6): PO manda os ajustes → agente redige a v1.8 → aprovação antes do T046 (US8); no mesmo redraft decide-se se a fala "Despedida" fica (inalcançável sem US6). O redraft v1.8 também inclui: (a) a linha de produto do arrasto-acorda — saída do estado Sleep passa a ser "convocação por atalho **ou por arrasto do pato**" (tabela 5.5 + E2); (b) esclarecimento de uma linha em E2/tabela: o sono vale só para inatividade com microfone ligado — "Sem escuta" (mudo) mantém a sessão até toggle ou encerramento (decisão #11)
+- **PRD Q1** (persona e falas-chave, seção 5.6): PO manda os ajustes → agente redige a v1.8 → aprovação antes do T046 (US8); no mesmo redraft decide-se se a fala "Despedida" fica (inalcançável sem US6). O redraft v1.8 também inclui: (a) a linha de produto do arrasto-acorda — saída do estado Sleep passa a ser "convocação por atalho **ou por arrasto do pato**" (tabela 5.5 + E2); (b) esclarecimento de uma linha em E2/tabela: o sono vale só para inatividade com microfone ligado — "Sem escuta" (mudo) mantém a sessão até toggle ou encerramento (decisão #11); (c) **remoção de todos os quacks restantes** (decisão #12): E8 (confirmação ao religar vira o indicador visual da pílula), falas-chave com "Quack!" reescritas sem ele, D11 revogada

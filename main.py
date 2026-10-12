@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -59,6 +60,9 @@ async def ws_endpoint(websocket: WebSocket) -> None:
     timeout_seconds = float(os.getenv("SLEEP_AFTER_SECONDS", "80"))
     loop = asyncio.get_running_loop()
     last_utterance = loop.time()
+    # Decision #11: an explicit mute pauses the sleep watchdog for the whole
+    # connection (it survives the single go-away reconnect below).
+    muted = False
     saved_handle: str | None = None
     logger.info("ws conectado (sleep timeout %.1fs)", timeout_seconds)
 
@@ -105,7 +109,7 @@ async def ws_endpoint(websocket: WebSocket) -> None:
                         end_reason = "session_ended"
 
                 async def pump_from_client() -> None:
-                    nonlocal audio_frames
+                    nonlocal audio_frames, muted, last_utterance
                     while True:
                         packet = await websocket.receive()
                         data = packet.get("bytes")
@@ -117,6 +121,30 @@ async def ws_endpoint(websocket: WebSocket) -> None:
                             continue
 
                         if packet.get("text") is not None:
+                            try:
+                                envelope = json.loads(packet["text"])
+                            except ValueError:
+                                envelope = None
+                            payload = (
+                                envelope.get("payload")
+                                if isinstance(envelope, dict)
+                                else None
+                            )
+                            if (
+                                isinstance(envelope, dict)
+                                and envelope.get("type") == "muted"
+                                and isinstance(payload, dict)
+                                and isinstance(payload.get("value"), bool)
+                            ):
+                                muted = payload["value"]
+                                if not muted:
+                                    # Unmuting resumes the conversation in
+                                    # the same session: the inactivity clock
+                                    # restarts, so the duck does not sleep
+                                    # the instant the mic returns.
+                                    last_utterance = loop.time()
+                                logger.info("cliente mutado: %s", muted)
+                                continue
                             await _safe_send_json(
                                 websocket,
                                 {"type": "error", "payload": {"reason": "invalid_message"}},
@@ -127,7 +155,11 @@ async def ws_endpoint(websocket: WebSocket) -> None:
                     interval = min(5.0, max(timeout_seconds / 10.0, 0.05))
                     while True:
                         await asyncio.sleep(interval)
-                        if should_sleep(last_utterance, loop.time(), timeout_seconds):
+                        # Decision #11: sleep only fires for inactivity with
+                        # the mic on; an explicit mute keeps the session alive.
+                        if not muted and should_sleep(
+                            last_utterance, loop.time(), timeout_seconds
+                        ):
                             end_reason = "sleep"
                             await _safe_send_json(websocket, {"type": "sleep"})
                             return

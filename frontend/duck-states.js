@@ -65,6 +65,16 @@
     ) {
       avatarEl.setAttribute("src", image);
     }
+    // The mic button is a function of the state too (Single Source of
+    // Truth): is-muted whenever the mic is factually off — Sem escuta,
+    // SLEEP (session closed) or OCULTO (nothing is captured). Art and CSS
+    // shipped in US8; US4 only flips the class for real.
+    const micButtonEl = rootEl.querySelector("#mic-toggle");
+    if (micButtonEl !== null) {
+      const micOff = stateMachine.isMicOff(state);
+      micButtonEl.classList.toggle("is-on", !micOff);
+      micButtonEl.classList.toggle("is-muted", micOff);
+    }
   }
 
   function initDuck(rootEl) {
@@ -86,7 +96,9 @@
 
     function dispatch(action) {
       const next = stateMachine.duckReducer(state, action);
-      if (next.status === state.status) {
+      // A mute toggle changes isMuted while keeping the status, so both
+      // fields take part in the "nothing changed" guard.
+      if (next.status === state.status && next.isMuted === state.isMuted) {
         return;
       }
       const wasVisible = state.status !== stateMachine.DUCK_STATES.OCULTO;
@@ -127,6 +139,23 @@
     function enterSleep() {
       dispatch({ type: "SLEEP" });
       closeSession();
+    }
+
+    // US4 mute: capture stops for real (privacy — no track alive) while the
+    // session and its context stay alive; the backend pauses the sleep
+    // watchdog while muted (decision #11). Unmuting reopens the mic and the
+    // conversation resumes in the same session.
+    function toggleMute() {
+      const willMute = !state.isMuted;
+      dispatch({ type: "MIC_TOGGLED" });
+      if (willMute) {
+        mic.stopCapture();
+      } else {
+        mic
+          .start((chunk) => client.sendBinary(chunk))
+          .catch((error) => console.error("[duck] microfone:", error));
+      }
+      client.send({ type: "muted", payload: { value: willMute } });
     }
 
     function handleEnvelope(envelope) {
@@ -179,6 +208,31 @@
         state.status === stateMachine.DUCK_STATES.OCULTO ||
         state.status === stateMachine.DUCK_STATES.SLEEP
       ) {
+        summonAction();
+      }
+    });
+
+    const micButtonEl = rootEl.querySelector("#mic-toggle");
+    if (micButtonEl !== null) {
+      micButtonEl.addEventListener("click", () => {
+        // The pill button also wakes the sleeping duck listening (PO,
+        // 2026-10-12); it is a real button outside the drag region, unlike
+        // the rejected click-on-duck. The pill is hidden while OCULTO.
+        if (state.status === stateMachine.DUCK_STATES.SLEEP) {
+          summonAction();
+          return;
+        }
+        if (state.status === stateMachine.DUCK_STATES.OCULTO) {
+          return;
+        }
+        toggleMute();
+      });
+    }
+
+    api.onDuckMoved(() => {
+      // Drag-wake (decision #10): only SLEEP reacts — dragging an awake or
+      // muted duck changes nothing and never unmutes. No click-on-duck.
+      if (state.status === stateMachine.DUCK_STATES.SLEEP) {
         summonAction();
       }
     });

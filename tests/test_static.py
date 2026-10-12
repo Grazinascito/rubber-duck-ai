@@ -11,3 +11,4 @@ def test_serves_the_page_with_the_duck_avatar_and_the_control_pill():
     assert response.status_code == 200
     assert 'id="duck-avatar"' in response.text
     assert 'class="control-pill"' in response.text
+    assert 'id="mic-toggle"' in response.text

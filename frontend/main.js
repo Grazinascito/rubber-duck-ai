@@ -99,6 +99,25 @@ function createWindow() {
   duckWindow.webContents.on("console-message", (_event, _level, message) => {
     console.log(`[renderer] ${message}`);
   });
+  // Drag-wake (decision #10, T071): relay window movement to the renderer,
+  // which decides — main stays stateless exactly like the shortcut relay.
+  // `move` fires continuously during a drag; the renderer no-ops unless the
+  // duck is in SLEEP, so repeats are harmless. The cursor-in-bounds guard
+  // skips events without the cursor over the window (programmatic
+  // repositioning, if ever added): a drag always has the cursor inside.
+  duckWindow.on("move", () => {
+    if (duckWindow === null || !duckWindow.isVisible()) return;
+    const cursor = screen.getCursorScreenPoint();
+    const bounds = duckWindow.getBounds();
+    const dragging =
+      cursor.x >= bounds.x &&
+      cursor.x <= bounds.x + bounds.width &&
+      cursor.y >= bounds.y &&
+      cursor.y <= bounds.y + bounds.height;
+    if (dragging) {
+      duckWindow.webContents.send("duck:moved");
+    }
+  });
 }
 
 const MOUSE_POLL_INTERVAL_MS = 50;

@@ -197,6 +197,47 @@ def test_resets_the_sleep_timer_when_an_empty_transcription_arrives(client, monk
     assert elapsed >= 1.45
 
 
+def test_the_sleep_watchdog_stays_paused_while_muted_and_fires_only_after_unmuting(
+    client, monkeypatch
+):
+    # Decision #11: an explicit mute keeps the session alive — the watchdog
+    # only fires for inactivity with the mic on.
+    monkeypatch.setenv("SLEEP_AFTER_SECONDS", "0.4")
+    stub = StubSession(hold_open=True)
+    monkeypatch.setattr(main, "connect_session", StubConnect([stub]))
+
+    with client.websocket_connect("/ws") as websocket:
+        websocket.send_json({"type": "muted", "payload": {"value": True}})
+        # 0.8 s: twice the timeout. If the watchdog had fired while muted,
+        # the socket would be closed by now and the send below would fail.
+        time.sleep(0.8)
+        unmuted_at = time.monotonic()
+        websocket.send_json({"type": "muted", "payload": {"value": False}})
+        envelope = websocket.receive_json()
+        elapsed = time.monotonic() - unmuted_at
+        assert envelope == {"type": "sleep"}
+        with pytest.raises(WebSocketDisconnect):
+            websocket.receive_json()
+
+    # The inactivity clock restarts on unmute: without the reset the duck
+    # would sleep ~instantly (elapsed ≈ one watchdog interval), not after a
+    # fresh full timeout.
+    assert elapsed >= 0.35
+
+
+def test_rejects_non_muted_text_messages_with_invalid_message(client, monkeypatch):
+    monkeypatch.setenv("SLEEP_AFTER_SECONDS", "10000")
+    stub = StubSession(hold_open=True)
+    monkeypatch.setattr(main, "connect_session", StubConnect([stub]))
+
+    with client.websocket_connect("/ws") as websocket:
+        websocket.send_text("hello")
+        assert websocket.receive_json() == {
+            "type": "error",
+            "payload": {"reason": "invalid_message"},
+        }
+
+
 def test_reconnects_once_with_the_stored_resumption_handle_after_go_away(
     client, monkeypatch
 ):
