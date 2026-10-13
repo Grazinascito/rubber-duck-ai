@@ -1,7 +1,7 @@
 # Pesquisa técnica — Rubber Duck AI (POC)
 
 - **Data:** 2026-10-12
-- **Status:** pesquisa concluída; insumo para o plano de implementação (ainda não escrito). Seção 4 (segurança/responsible AI) adicionada no mesmo dia, a pedido, após lacuna identificada.
+- **Status:** pesquisa concluída; insumo para o plano de implementação (ainda não escrito à época). Seção 4 (segurança/responsible AI) adicionada no mesmo dia, a pedido, após lacuna identificada. **Estado (2026-10-13):** o plano de implementação existe (`plano-de-tasks.md`); a proposta de 120 s de silêncio foi decidida como 80 s (`SLEEP_AFTER_SECONDS`, decisão #2 do plano).
 - **Método:** verificação das afirmações da pesquisa feita pelo Claude contra as fontes oficiais (documentação do Google, especificação W3C, código do exemplo oficial). Nenhum arquivo foi criado nem nenhum servidor iniciado durante a pesquisa.
 
 ## 1. Confirmações — a pesquisa do Claude está correta

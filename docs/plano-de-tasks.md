@@ -1,6 +1,6 @@
 # Plano de tasks — Rubber Duck AI (POC)
 
-- **Data:** 2026-10-12 · **Fontes:** PRD v1.6 + `pesquisa-tecnica.md` · **Detalhes** (assinaturas, nomes de testes, subtarefas): plano de implementação, depois da aprovação deste
+- **Data:** 2026-10-12 · **Fontes:** PRD (v1.6 na origem; emendas até a v1.8) + `pesquisa-tecnica.md` · **Detalhes** (assinaturas, nomes de testes, subtarefas): plano de implementação, depois da aprovação deste
 - **Tags:** `[P]` = paralelizável · `[USx]` = story dona da task · `(depends on Txxx)` = dependência
 - **Decisões embutidas** (motivos na pesquisa): Electron abre com `loadURL("http://127.0.0.1:8000")`, não `loadFile`; timer de sono (80 s) no backend via `input_audio_transcription`; `safety_settings` no padrão; modelo `gemini-3.8-live` via `.env`
 - **Reestruturação (2026-10-12, a pedido da PO)**: nova **US8 — Identidade do pato (visual + fala)**, antes da US4. A autoria da system instruction (`duck_instruction.py`) mudou da US3 para a US8; a US3 ficou com ajuste fino e validação do comportamento e passou a depender da US8. A US6 subiu uma fase para acomodar a ordem.
@@ -43,10 +43,10 @@
 - [ ] T012 `frontend/main.js`: spawn Python (`python3`/`python` per platform), poll `/health`, `loadURL("http://127.0.0.1:8000")`, kill child on quit
 - [ ] T013 `frontend/preload.js`: `contextBridge` with minimal summon/dismiss command channel
 - [ ] T014 [P] `frontend/gemini-client.js`: WS client with reconnect + message-shape validation (check `type` before use)
-- [ ] T015 [P] `frontend/index.html` + `frontend/duck.css`: minimal page showing "conectado"/"desconectado"
+- [x] ~~T015 [P] `frontend/index.html` + `frontend/duck.css`: minimal page showing "conectado"/"desconectado"~~ — **emendado (PO, 2026-10-12, decisão #9)**: página mínima SEM marcador de conexão (avatar + pílula; status de conexão só no terminal) — coberto por T009
 - [ ] T016 Electron security baseline: `contextIsolation` on, `nodeIntegration` off, sandbox, permission handler approving only `media`, CSP on served page
 
-**Checkpoint**: `npm start` opens window showing "conectado"; quitting kills Python (`lsof -nP -i :8000` empty)
+**Checkpoint**: `npm start` abre a janela com a UI do pato (status de conexão só no terminal); quitting kills Python (`lsof -nP -i :8000` empty)
 
 ---
 
@@ -112,7 +112,7 @@
 
 ## Phase 5: ~~User Story 6 - Encerrar a sessão~~ (DISSOLVIDA — PO, 2026-10-12)
 
-**Motivo**: a US2 já entregou o teardown completo — o atalho durante a conversa para playback/captura, fecha o WS e esconde o pato (`frontend/duck-states.js`: `closeSession` + handler do atalho); privacidade AC6.2 fechada. Sem farewell em áudio local. "Encerrado" deixa de ser estado (todo encerramento leva a Oculto); T037–T041 removidas. F7/AC6.x do PRD ajustados no redraft v1.8 (junto com o 5.6).
+**Motivo**: a US2 já entregou o teardown completo — o atalho durante a conversa para playback/captura, fecha o WS e esconde o pato (`frontend/duck-states.js`: `closeSession` + handler do atalho); privacidade AC6.2 fechada. Sem farewell em áudio local. "Encerrado" deixa de ser estado (todo encerramento leva a Oculto); T037–T041 removidas. F7/AC6.x do PRD ajustados no redraft v1.8 (2026-10-13); persona/falas (5.6) ficam para a v1.9.
 
 **Checkpoint**: absorvido pela US2 (atalho encerra a sessão e o pato some)
 
@@ -120,11 +120,11 @@
 
 ## Phase 6: User Story 8 - Identidade do pato: visual e fala (Priority: P2) 🆕
 
-**Goal**: The duck's identity in one place: one image per state (estados do PRD 5.5 com arte: Ouvindo, Pensando, Falando, Sleep "zzz"; Sem escuta usa a arte base — o indicador de mudo chega com o toggle na US4), icon bar below the duck (hover, holds future mic/caption icons), arte final da PO (assets em `frontend/images/`), and the duck's system instruction (`duck_instruction.py` from PRD 5.6 — persona, falas-chave)
+**Goal**: The duck's identity in one place: one image per state (estados do PRD 5.5 com arte: Ouvindo, Pensando, Falando, Sleep "zzz"; Sem escuta usa a arte base — o indicador de mudo chega com o toggle na US4), icon bar below the duck (sempre visível; comporta microfone e legenda), arte final da PO (assets em `frontend/images/`), and the duck's system instruction (`duck_instruction.py` from PRD 5.6 — persona, falas-chave)
 
-**Independent Test**: unit-test drive the state machine through all states → each maps to its image file; hover the duck → icon bar appears below; conversa curta → falas seguem as falas-chave do PRD (ensaio A5)
+**Independent Test**: unit-test drive the state machine through all states → each maps to its image file; pílula de controles sempre visível abaixo do pato; conversa curta → falas seguem as falas-chave do PRD (ensaio A5)
 
-**⚠️ Gate T046: ajustes da PO no PRD 5.6 primeiro (ela manda as mudanças → redraft v1.8 → aprovação). Q3/AC3.7 fechado (PO, 2026-10-12): o pato não escreve código por você — hipótese sempre em conceito. No redraft também se decide se a fala "Despedida" fica (inalcançável sem a US6)**
+**⚠️ Gate T046: ajustes da PO no PRD 5.6 primeiro (ela manda as mudanças → redraft v1.9 → aprovação). Q3/AC3.7 fechado (PO, 2026-10-12): o pato não escreve código por você — hipótese sempre em conceito. No v1.9 também se decide se a fala "Despedida" fica (inalcançável sem a US6)**
 
 ### Tests for User Story 8 (OPTIONAL - only if tests requested) ⚠️
 
@@ -134,10 +134,11 @@
 
 - [x] T043 [US8] `frontend/index.html` + `duck.css`: icon-bar container below the duck — **emendado (PO, 2026-10-12)**: pílula `control-pill` SEMPRE visível (não só no hover), com o design dela (mic `is-on` âmbar, legendas `is-off` cinza, divisor, glass), SVG inline; botões seguem inertes até US4/US5
 - [x] T044 [US8] `frontend/duck-states.js`: `imageForState` mapping wired into the render function; `id="duck-avatar"` no img; placeholders antigos (`duck-idle.png`, `generate-placeholders.py`) removidos (depends on T024, T033, T042)
-- [x] T045 [US8] **cumprido pelos assets da PO (2026-10-12)**: `pato.png` / `pato-thinking.png` / `pato-sleep.png` em `frontend/images/` (set consistente, fundo transparente; Sem escuta = arte base; ícones da icon bar = emoji até US4/US5)
-- [ ] T046 [US8] GATED: redraft do PRD 5.6 (v1.8) primeiro → criar `duck_instruction.py` (persona, falas-chave, question bank, idioma; Q3 mantido: nunca código pronto) → plugar no `LiveConnectConfig` via import em `gemini_live.py` (depends on T029, gate 5.6)
+- [x] T045 [US8] **cumprido pelos assets da PO (2026-10-12)**: `pato.png` / `pato-thinking.png` / `pato-sleep.png` em `frontend/images/` (set consistente, fundo transparente; Sem escuta = arte base; ícones da icon bar = SVG inline — T043) + `pato-talk-1.png` / `pato-talk-2.png` (bico animado — T075)
+- [ ] T046 [US8] GATED: redraft do PRD 5.6 (v1.9) primeiro → criar `duck_instruction.py` (persona, falas-chave, question bank, idioma; Q3 mantido: nunca código pronto) → plugar no `LiveConnectConfig` via import em `gemini_live.py` (depends on T029, gate 5.6)
 - [x] T047 [US8] **cumprido pelos assets da PO** (substitui a referência Stitch); troca estado→imagem verificada via T042
 - [ ] T048 [US8] Manual validation: visual checklist per state + greeting/falas-chave read-through (ensaio curto, A5)
+- [x] T075 [US8] **absorvido fora do plano (commit 5fe0165, 2026-10-12)**: `frontend/duck-talk-animator.js` + `pato-talk-1/2.png` — bico sincronizado com a voz (RMS do playback troca o `src` do avatar); testes em `frontend/duck-talk-animator.test.js` e `frontend/duck-states.test.js`; documentado no README
 
 **Checkpoint**: duck has full identity — per-state visuals, icon bar, final art, persona/falas loaded
 
@@ -166,7 +167,7 @@
 
 **Goal**: Mic icon toggles listening with permanent mute indicator; re-enable silently reopens the mic (no sound — decision #12). NEW (PO, 2026-10-12): dragging the sleeping duck wakes it — mic reopens with the new session
 
-**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → conversation RESUMES in the SAME session, no sound played (sleep timer paused while muted — decision #11); sleeping duck → drag it → duck wakes listening (mic dot on)
+**Independent Test**: click mic icon → permanent mute indicator; say marker word → no reaction/transcript; re-enable → conversation RESUMES in the SAME session, no sound played (sleep timer paused while muted — decision #11); sleeping duck → drag it → duck wakes listening (mic dot on); sleeping duck → click the mic button → duck wakes listening (decisão #13)
 
 ### Tests for User Story 4 (OPTIONAL - only if tests requested) ⚠️
 
@@ -183,6 +184,7 @@
 - [ ] T055 [US4] Manual validation AC4.1–AC4.3 (marker-word privacy test) + arrasto-acorda do SLEEP (mic liga ao acordar)
 - [x] T073 [US4] `main.py`: receber `{"type":"muted","payload":{"value":true|false}}` do cliente → **pausar o watchdog de sono enquanto mutado** e retomar ao desmutar (decisão #11: mudo explícito mantém a sessão viva — custo ~zero, sem áudio enviado; sono só dispara por inatividade com microfone ligado) — **emendado (PO, 2026-10-12)**: shape com `payload`, conforme o envelope do CONTEXT.md (code review)
 - [x] T074 [P] [US4] Test in `tests/test_ws_route.py`: watchdog NÃO dispara enquanto `muted`; após desmutar + timeout, dispara
+- [x] T076 [US4] Teste em `frontend/duck-states.test.js`: clicar o botão de microfone no SLEEP acorda o pato (mesma transição do atalho) — cobre a decisão #13
 
 ---
 
@@ -258,12 +260,14 @@
 5. ✅ Licença do repositório: **MIT**
 6. ✅ US6 dissolvida (2026-10-12): teardown já entregue pela US2; sem farewell em áudio local; "Encerrado" deixa de existir
 7. ✅ Q3/AC3.7 mantido (2026-10-12): o pato não escreve código por você; hipótese sempre em conceito
-8. ✅ Arte final da US8: assets da PO (`pato.png`, `pato-thinking.png`, `pato-sleep.png`) substituem placeholders e a referência Stitch
+8. ✅ Arte final da US8: assets da PO (`pato.png`, `pato-thinking.png`, `pato-sleep.png` + `pato-talk-1.png`/`pato-talk-2.png` — T075) substituem placeholders e a referência Stitch
 9. ✅ Badge de conexão sai da UI; estado de conexão só no terminal (PO, 2026-10-12). Pílula de controles sempre visível com o design da PO (mic âmbar / legendas cinza)
 10. ✅ **Arrasto-acorda (PO, 2026-10-12, parte da US4 — T070–T072):** arrastar o pato no estado SLEEP acorda (mic liga com a sessão nova); arrastar pato acordado NUNCA desmuta (gesto frequente, dessilêncio acidental); sem clique-no-pato (região de arrasto não entrega clique confiável no Electron). Voz-wake ("ei pato") rejeitado para a POC: exigiria microfone sempre ativo (custo/privacidade/dependência) — candidato de MVP
 11. ✅ **Mudo explícito ≠ silêncio (PO, 2026-10-12, US4 — T073/T074):** mutar pelo ícone mantém a sessão viva indefinidamente (pausa declarada; custo ~zero — sem áudio enviado, nenhum token). O sono (E2) só dispara por inatividade **com microfone ligado**. O backend passa a saber do mudo (mensagem `muted` no WS) e pausa o watchdog. A tabela de estados do PRD já dizia isso ("Sem escuta" sai por toggle ou encerramento) — v1.8 só ganha uma linha de esclarecimento
 12. ✅ **Sem quack nenhum (PO, 2026-10-12):** nenhum som de quack existe no produto. E8/D11 (Quack! ao religar o microfone) **revogado** — a confirmação de que a escuta voltou é o indicador visual (pílula âmbar `is-on`). As falas "Quack! Foi você que achou" (comemoração) e "Quack. Boa sessão" (despedida) saem no redraft v1.8 do PRD (E8, falas-chave 5.6 e D11)
+13. ✅ **Botão-acorda (PO, ratifica em 2026-10-13 o já implementado; US4):** o botão de microfone da pílula acorda o pato do SLEEP — mesma transição do atalho/arrasto (wiring em `duck-states.js`; o reducer mantém MIC_TOGGLED como no-op no SLEEP). PRD: D15. Teste: T076.
 
 ## Ainda abertas
 
-- **PRD Q1** (persona e falas-chave, seção 5.6): PO manda os ajustes → agente redige a v1.8 → aprovação antes do T046 (US8); no mesmo redraft decide-se se a fala "Despedida" fica (inalcançável sem US6). O redraft v1.8 também inclui: (a) a linha de produto do arrasto-acorda — saída do estado Sleep passa a ser "convocação por atalho **ou por arrasto do pato**" (tabela 5.5 + E2); (b) esclarecimento de uma linha em E2/tabela: o sono vale só para inatividade com microfone ligado — "Sem escuta" (mudo) mantém a sessão até toggle ou encerramento (decisão #11); (c) **remoção de todos os quacks restantes** (decisão #12): E8 (confirmação ao religar vira o indicador visual da pílula), falas-chave com "Quack!" reescritas sem ele, D11 revogada
+- **PRD Q1** (persona e falas-chave, seção 5.6) → **v1.9**: PO manda os ajustes → agente redige a v1.9 → aprovação antes do T046 (US8); no mesmo redraft decide-se se a fala "Despedida" fica (inalcançável sem a US6). Gate do T046 inalterado.
+- **Fechadas no v1.8 mecânico do PRD (2026-10-13)** — tudo com decisão já tomada: US6 dissolvida no PRD (estado Encerrado, F7, Fluxo C e bloco US6 removidos; AC6.2 reescrita como AC2.4), quacks eliminados (E8/D11 revogados — D17; falas reescritas sem "Quack!"), exceção do P6 removida, Q3 fechado na 10.1, indicador de mudo na pílula (AC4.3/E4), saídas do Sleep = atalho/arrasto/botão de microfone (D15; decisões #10 e #13), mudo ≠ silêncio (D16; decisão #11), D15–D17 registradas no apêndice A, CS4→CS3, referência Stitch substituída pela arte da PO, E2 fixa 80 s (`SLEEP_AFTER_SECONDS`), citação ao PRD v0.6 corrigida (arquivo não existe no repositório)

@@ -5,6 +5,7 @@
 - **Componente:** backend `/ws` (`main.py`) + `google-genai` 2.29.0
 - **Severidade:** bloqueante — impedia AC2.1, AC2.2 e AC2.3 (o pato nunca escutava)
 - **Status:** corrigido e validado (ver [Validação](#validação))
+- **Estado (2026-10-13):** números supersededos — a suíte hoje tem 23 testes pytest (conferidos na execução); T036 marcado concluído no plano; a saudação descrita aqui foi removida do produto (PRD v1.7 — o pato só escuta)
 
 ---
 

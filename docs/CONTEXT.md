@@ -14,6 +14,13 @@ _Avoid_: payload solto, mensagem crua.
 Os dois comandos que mostram (summon) e escondem (dismiss) o pato.
 _Avoid_: abrir/fechar, mostrar/esconder, toggle.
 
+**Encerramento**:
+O fim da sessão ativa pela dispensa (atalho de convocação durante a
+conversa): playback e captura param, o WebSocket fecha e o pato vai para
+Oculto. Sinônimo de dismiss quando há sessão aberta; não existe estado
+"Encerrado" (US6 dissolvida).
+_Avoid_: Encerrado (como estado), finalizar.
+
 **Oculto / Ouvindo / Pensando / Falando / Sleep**:
 Os estados do pato. Oculto: ausente da tela, janela escondida, sem interação,
 nada é captado. Ouvindo: presente no canto, arrastável, escutando a usuária.

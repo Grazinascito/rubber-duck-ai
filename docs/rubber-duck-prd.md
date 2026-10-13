@@ -4,9 +4,9 @@
 
 - **Autora:** Grazi
 - **Data:** 2026-10-12
-- **Versão:** v1.7
-- **Fontes:** PRD v0.6 (`prd-rubber-duck-ai-v0.6.md`), que consolidou as notas de descoberta de 2026-10-12 e as revisões do mesmo dia
-- **Status:** rascunho para revisão final — 2 pendências listadas na seção 10.1 (Q1 e Q3)
+- **Versão:** v1.8
+- **Fontes:** iterações v0.1–v0.6 do PRD (arquivo anterior, não versionado no repositório), que consolidaram as notas de descoberta de 2026-10-12 e as revisões do mesmo dia
+- **Status:** rascunho para revisão final — 1 pendência listada na seção 10.1 (Q1; persona/falas completas na v1.9)
 
 **Regra deste documento:** ele define produto, não implementação. Perguntas técnicas ficam no Estacionamento (seção 10.2) e serão respondidas no plano técnico, depois da aprovação deste PRD.
 
@@ -19,7 +19,7 @@
 
 | Versão | Data | Descrição |
 |---|---|---|
-| v0.1–v0.6 | 2026-10-12 | Iterações do documento anterior `prd-rubber-duck-ai-v0.6.md` (histórico detalhado naquele arquivo) |
+| v0.1–v0.6 | 2026-10-12 | Iterações do documento anterior (arquivo não versionado no repositório) |
 | v1.0 | 2026-10-12 | Reformulação no formato padrão de PRD (10 seções + registro de decisões + autoavaliação); mesmo conteúdo de produto, sem o histórico de conversas |
 | v1.1 | 2026-10-12 | Remoção de informações pessoais (objetivos pessoais, post do LinkedIn, persona como autodescrição); público e problema ancorados no conceito original de rubber duck debugging |
 | v1.2 | 2026-10-12 | Seção 5.2 reescrita como postura (matéria-prima da system instruction), sem sequência rígida de fases; referências a "fase 1/2/3 de P1" renomeadas para os momentos do arco (questionamento, hipótese, re-elaboração) |
@@ -28,6 +28,7 @@
 | v1.5 | 2026-10-12 | Decisões fechadas (D10–D14): modo sleep após silêncio longo (E2, estado Sleep, F9), Quack! ao religar microfone (E8), aceite dos demais edge cases e de P7, chave própria de API para quem instala (A6), stack híbrida Python + Electron (C4); fala de E11 atualizada; pendências reduzidas de 6 para 2 |
 | v1.6 | 2026-10-12 | Nome genérico adotado para a POC: o projeto e o pato passam a se chamar **Rubber Duck AI** — o nome final fica guardado para o projeto completo; referências no documento, no arquivo antigo e na pasta atualizadas |
 | v1.7 | 2026-10-12 | Saudação de convocação removida (decisão da PO após os testes da US2): quem inicia a comunicação é a usuária — P6 fica sem a exceção da saudação; fluxo A e falas-chave ajustados. Sons de "quack" por turno eliminados na instrução (persona final na US8) |
+| v1.8 | 2026-10-13 | Ajustes mecânicos com decisão fechada: US6 dissolvida (estado Encerrado, F7, Fluxo C e bloco US6 removidos; AC6.2 → AC2.4), quacks eliminados (E8/D11 revogados — D17; falas reescritas), exceção do P6 removida, Q3 fechado, indicador de mudo na pílula (AC4.3/E4), saídas do Sleep por atalho/arrasto/botão (D15), mudo ≠ silêncio (D16), CS4→CS3, Stitch → arte da PO, E2 fixa 80 s (plano). Persona/falas completas: v1.9 (Q1) |
 
 ## Sumário
 
@@ -151,7 +152,7 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 - **P3.** Perguntas que devolvem o trabalho para a usuária (repertório na seção 5.6).
 - **P4.** Não interromper: se a usuária começa a falar enquanto o pato fala, ele para e ouve (padrão de interrupção natural, confirmado na decisão A3).
 - **P5.** Insistir destrava a opinião. Quando a usuária pede a resposta antes de tentar, o pato tende a devolver uma pergunta primeiro — um adiamento, não uma recusa permanente. Se ela insiste de novo, ou descreve uma tentativa real, ele opina: hipótese marcada como chute e convite à re-elaboração (P1).
-- **P6.** O pato nunca inicia um turno (decisão D6): ele responde só quando a usuária fala com ele. Silêncio dela gera silêncio dele. Exceção: a confirmação ao religar o microfone (E8, seção 7.3). O convite à re-elaboração não viola este princípio: faz parte do mesmo turno de resposta; sem resposta, o pato espera — e, se o silêncio se estende, a sessão encerra e ele dorme (E2).
+- **P6.** O pato nunca inicia um turno (decisão D6): ele responde só quando a usuária fala com ele. Silêncio dela gera silêncio dele. O convite à re-elaboração não viola este princípio: faz parte do mesmo turno de resposta; sem resposta, o pato espera — e, se o silêncio se estende, a sessão encerra e ele dorme (E2).
 - **P7. Honestidade epistêmica** (aceito 2026-10-12, D14): o pato distingue o que sabe do que chuta. Admite "não sei"; marca como chute toda hipótese; nunca finge certeza; nunca inventa fato verificável (assinatura de função, número de versão, citação) — nesses casos aponta para a documentação.
 - **P8. Mais que perguntas: acompanha e direciona.** Perguntar é a ferramenta principal do pato, mas não a única. Ele também incentiva quando a usuária está no caminho certo ("acho que você tá no caminho certo"), sugere tentativas ("experimenta isso") e aponta tópicos para a usuária pesquisar ("talvez pesquisar sobre X ajude" — apontar o tópico é diferente de buscar; o pato não busca na POC, C6). A conversa é dinâmica: pergunta, incentivo, sugestão e hipótese se misturam conforme o momento pede.
 
@@ -165,7 +166,7 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 4. O pato responde por voz: pergunta curta, incentivo ou sugestão (P1, P8).
 5. Passos 3–4 se repetem enquanto a usuária quiser. Quando ela passa pelo questionamento (pede de novo ou mostra uma tentativa real), o pato oferece a hipótese, marcada como tal, e pede a re-elaboração (P1).
 6. Se a usuária fica em silêncio, o pato fica em silêncio (P6) — ele nunca re-pergunta por conta própria. Em silêncio longo, a sessão encerra e o pato dorme na tela (E2).
-7. Comando de encerrar → o pato sai da tela e para de ouvir o microfone.
+7. Atalho de convocação de novo → o pato sai da tela, a sessão encerra e o microfone para de capturar.
 
 **Fluxo B — Ajustar durante a sessão:**
 
@@ -173,9 +174,9 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 - Clicar no ícone de legenda para exibir a transcrição do que o pato fala (a voz do pato continua; a legenda é leitura opcional).
 - Arrastar o pato para outra posição da tela.
 
-**Fluxo C — Encerrar:**
+**Fluxo C — Encerrar (dispensar):**
 
-- Comando (ou frase de despedida) → o pato desaparece e o microfone para de captar áudio.
+- Atalho de convocação durante a sessão → o pato desaparece, a sessão encerra e o microfone para de captar.
 
 ### 5.4 Features (POC)
 
@@ -187,7 +188,7 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 | F4 | Comportamento rubber duck (princípios P1–P8) |
 | F5 | Toggle de microfone: liga/desliga a escuta da usuária |
 | F6 | Toggle de legenda: exibe/oculta a transcrição da fala do pato (a voz do pato não tem toggle) |
-| F7 | Encerramento de sessão |
+| F7 | Encerramento de sessão pela dispensa (atalho de convocação) |
 | F8 | Roda em macOS e Windows |
 | F9 | Modo sleep: após silêncio longo, a sessão encerra e o pato dorme na tela (olhos fechados, "zzz") até nova convocação |
 
@@ -198,21 +199,21 @@ Como ler esta seção: os princípios abaixo são a matéria-prima da system ins
 | Oculto | Pato fora da tela | Nada é captado | Atalho de convocação |
 | Ouvindo | Pato visível, atento | O microfone captura a fala da usuária | A usuária para de falar |
 | Pensando | Pato processando | Transitório entre a usuária parar de falar e o pato responder | Resposta pronta |
-| Falando | Pato enuncia (pergunta, hipótese ou pedido de re-elaboração) | Voz + transcrição (se a legenda estiver ligada) | Fala termina; volta a Ouvindo |
-| Sem escuta | Pato visível com indicador de microfone desligado (AC4.3) | O microfone está mudo: nada do que a usuária fala é captado; sem entrada, o pato não gera resposta | Toggle reativado ou sessão encerrada |
-| Sleep (dormindo) | Pato na tela com olhos fechados e símbolos "zzz" | Sessão encerrada por silêncio longo (E2): microfone desligado, nada é captado | Comando de convocação: o pato acorda e abre nova sessão |
-| Encerrado | Pato sai da tela | Fim da sessão; microfone desligado | — |
+| Falando | Pato enuncia (pergunta, hipótese ou pedido de re-elaboração) | Voz + transcrição (se a legenda estiver ligada); o bico anima com a própria voz | Fala termina; volta a Ouvindo |
+| Sem escuta | Pato visível com o botão de microfone da pílula desligado (AC4.3) | O microfone está mudo: nada do que a usuária fala é captado; sem entrada, o pato não gera resposta | Toggle reativado ou sessão encerrada |
+| Sleep (dormindo) | Pato na tela com olhos fechados e símbolos "zzz" | Sessão encerrada por silêncio longo (E2): microfone desligado, nada é captado | Convocação — atalho, arrasto do pato ou botão de microfone (D15): o pato acorda e abre nova sessão |
 
 Notas:
 
 - P6 aplicada a estados: não existe estado "esperando para re-perguntar". Em silêncio, o pato permanece em Ouvindo até a usuária falar; em silêncio longo, a sessão encerra e ele vai para Sleep (E2) — dormindo, segue sem falar por conta própria.
 - A voz do pato não tem estado "desligada": enquanto a sessão existe, toda resposta dele sai por voz; a legenda é uma camada de leitura por cima.
+- O sono (E2) só dispara por inatividade com o microfone ligado; em "Sem escuta" a sessão continua viva até o toggle ou a dispensa (D16).
 
 ### 5.6 Persona e fala do pato (system instruction v0 — conteúdo de produto)
 
 System instruction, aqui no PRD, significa: a definição escrita de como o pato se comporta e o que ele diz. O texto técnico final (o prompt que vai para a API) é trabalho do plano técnico; esta seção define o conteúdo de produto desse texto.
 
-🔶 **Assunção (pendente A5 — questão Q1 na seção 10.1):** personalidade e falas abaixo são proposta — precisam de revisão da product owner antes da gravação da demo.
+🔶 **Assunção (pendente A5 — questão Q1 na seção 10.1):** personalidade e falas abaixo são proposta — precisam de revisão da product owner antes da gravação da demo (revisão na v1.9).
 
 **Personalidade:**
 
@@ -228,7 +229,6 @@ A identidade do pato: um **ajudador de pensamento** (thinking partner: um compan
 **Falas-chave:**
 
 - Curiosidade diante de algo que ele não conhece: "Esse [X] eu não conhecia. Me ensina?"
-- Confirmação ao religar o microfone (E8): "Quack!"
 - Adiamento quando a usuária pede a resposta antes de tentar (P5, primeira vez): "Se eu te der agora, você perde a melhor parte. O que você já tentou?"
 - Incentivo quando a usuária está no caminho certo (P8): "Acho que você tá no caminho certo. Continua."
 - Sugestão de tentativa (P8): "Experimenta isso: [sugestão curta]. Me conta o que sair."
@@ -239,8 +239,8 @@ A identidade do pato: um **ajudador de pensamento** (thinking partner: um compan
 - Hipótese refutada pelo teste da usuária (E10): "Descartamos essa então. O que você observou quando testou?"
 - Não sei / não posso verificar (P7, E11): "Não sei te dizer de cabeça, e aqui eu não consigo buscar. Olha a doc [X] e me conta o que encontrou."
 - Repetição quando o áudio fica ruim (E5): "Não peguei direito. Repete pra mim?"
-- Comemoração quando a usuária destrava sozinha: "Quack! Foi você que achou. Eu só ouvi."
-- Despedida no encerramento: "Quack. Boa sessão."
+- Comemoração quando a usuária destrava sozinha: "Foi você que achou. Eu só ouvi."
+- Despedida no encerramento: "Boa sessão." 🔶 (v1.9: decide se fica — encerramento não tem fala própria)
 
 **Banco de perguntas** (repertório do questionamento, P1):
 
@@ -252,7 +252,7 @@ A identidade do pato: um **ajudador de pensamento** (thinking partner: um compan
 
 **Idioma** 🔶 (proposta): o pato responde no idioma em que a usuária fala com ele. A demo gravada fica em português; o repositório no GitHub e o projeto ficam em inglês (README, documentação e código).
 
-**Referência visual:** interface desenhada no Stitch (https://stitch.withgoogle.com/); referência de avatar no documento de origem (Notion).
+**Arte final:** assets da PO — `pato.png`, `pato-thinking.png`, `pato-sleep.png`, `pato-talk-1.png`, `pato-talk-2.png` (`frontend/images/`).
 
 ---
 
@@ -268,11 +268,11 @@ POC de 2 dias com uma única usuária de teste: o critério é demonstração, n
 ### Métricas secundárias
 
 - **CS2 — Custo por sessão conhecido e acessível:** medir durante a POC.
-- **CS4 — Instalação por terceiros:** uma pessoa que não participou do desenvolvimento instala e roda a partir do README, no macOS ou no Windows.
+- **CS3 — Instalação por terceiros:** uma pessoa que não participou do desenvolvimento instala e roda a partir do README, no macOS ou no Windows.
 
 ### Métricas de proteção (guardrails)
 
-- **Privacidade:** nenhum áudio é capturado com a sessão encerrada ou com a escuta desligada (AC4.1, AC6.2).
+- **Privacidade:** nenhum áudio é capturado com a sessão encerrada ou com a escuta desligada (AC4.1, AC2.4).
 - **Custo:** o custo por sessão medido não pode crescer ao ponto de violar CS2 durante os testes.
 
 ---
@@ -303,6 +303,7 @@ Como usuária, quero falar com o pato e ouvir as respostas por voz, para explica
 - [ ] AC2.1: a sessão inteira acontece por voz (falar e ouvir).
 - [ ] AC2.2: a conversa é contínua — posso responder ao pato e ele mantém o contexto do que já foi dito na sessão.
 - [ ] AC2.3: o pato nunca inicia um turno. Se eu fico em silêncio, ele fica em silêncio até eu falar de novo; se o silêncio se estende, a sessão encerra e ele dorme na tela (P6, E2).
+- [ ] AC2.4: depois que a sessão encerra (dispensa pelo atalho), nenhum áudio é capturado (privacidade; ex-AC6.2 da US6 dissolvida).
 
 **US3 — Comportamento rubber duck: perguntas primeiro, hipótese depois**
 
@@ -323,7 +324,7 @@ Como usuária, quero clicar no ícone de microfone para desligar a captação da
 
 - [ ] AC4.1: com o microfone desligado, nada do que eu falo é captado ou enviado.
 - [ ] AC4.2: o toggle de microfone (entrada) e o de legenda (exibição de transcrição) são independentes — um controla o que o pato ouve, o outro o que eu leio.
-- [ ] AC4.3: com o microfone desligado, fica visível no avatar que o pato não está escutando — para eu não esquecer que ele está mudo.
+- [ ] AC4.3: com o microfone desligado, fica visível na pílula de controles (botão de microfone cinza, `is-muted`) que o pato não está escutando — para eu não esquecer que ele está mudo.
 
 **US5 — Legendas**
 
@@ -331,13 +332,6 @@ Como usuária, quero clicar no ícone de legenda para ler a transcrição do que
 
 - [ ] AC5.1: a transcrição aparece junto com a fala do pato.
 - [ ] AC5.2: o toggle liga e desliga a transcrição a qualquer momento da sessão.
-
-**US6 — Encerrar a sessão**
-
-Como usuária, quero encerrar a sessão por comando, para o pato sair da tela e parar de me ouvir.
-
-- [ ] AC6.1: o pato desaparece da tela.
-- [ ] AC6.2: nenhum áudio é capturado depois do encerramento (privacidade).
 
 **US7 — Instalar e testar (GitHub)**
 
@@ -352,13 +346,13 @@ Como pessoa que viu o repositório no GitHub, quero instalar e rodar a POC no me
 | # | Caso | Tratamento | Status |
 |---|------|-----------|--------|
 | E1 | Usuária pede a resposta direto | Primeiro pedido: uma rodada de pergunta (P5). Segundo pedido, ou tentativa real descrita: hipótese + re-elaboração (P1) | Fechado |
-| E2 | Silêncio longo da usuária | A sessão encerra (microfone desligado) e o pato entra em modo sleep: permanece na tela com olhos fechados e símbolos "zzz", e acorda com novo comando de convocação. Ele segue sem re-perguntar (P6). A duração do silêncio até dormir fica para o plano técnico (Estacionamento) | Fechado (2026-10-12, D10) |
+| E2 | Silêncio longo da usuária | A sessão encerra (microfone desligado) e o pato entra em modo sleep: permanece na tela com olhos fechados e símbolos "zzz", e acorda com nova convocação — atalho, arrasto do pato ou botão de microfone (D15). Ele segue sem re-perguntar (P6). Duração definida no plano técnico: 80 s, configurável (`SLEEP_AFTER_SECONDS`) | Fechado (2026-10-12, D10) |
 | E3 | Usuária fala enquanto o pato fala | Ela pode interromper; o pato para e ouve (A3) | Fechado (confirmado) |
-| E4 | Usuária desliga o microfone e esquece de religar | Indicador visual permanente no avatar enquanto a escuta está desligada (AC4.3) | Fechado (confirmado 2026-10-12) |
+| E4 | Usuária desliga o microfone e esquece de religar | Indicador visual permanente na pílula de controles (botão de microfone desligado) enquanto a escuta está desligada (AC4.3) | Fechado (confirmado 2026-10-12) |
 | E5 | Ambiente ruidoso / fala truncada | O pato pede para repetir: "Não peguei direito. Repete pra mim?" | Fechado (confirmado) |
 | E6 | Sessão muito longa (custo) | Sem limite de duração na POC. Requisito: o pato se mantém coerente ao longo de sessões longas. O mecanismo (gerenciamento de memória/contexto) é decisão do plano técnico (Estacionamento, seção 10.2) | Fechado no produto |
 | E7 | Usuária muda de assunto no meio | O pato acompanha — o objetivo é ela destravar, não obedecer a um roteiro | Fechado (confirmado 2026-10-12) |
-| E8 | Usuária religa o microfone: o pato confirma que voltou a escutar? | Sim — um "Quack!" curto (aceito 2026-10-12, D11). Sem confirmação, a usuária não sabe se a escuta voltou | Fechado (2026-10-12) |
+| E8 | Usuária religa o microfone: o pato confirma que voltou a escutar? | Sim — a confirmação é visual: o botão de microfone da pílula volta a âmbar (`is-on`) quando a escuta retoma; sem som (plano, decisão #12; D11 revogada) | Fechado (2026-10-12; revisto 2026-10-13) |
 | E9 | Re-elaboração errada ou incompleta | O pato corrige apontando a diferença ("onde eu falei X, você falou Y") e pede de novo — o tópico só fecha quando a versão da usuária é coerente (P1, re-elaboração) | Fechado (confirmado 2026-10-12) |
 | E10 | Hipótese do pato refutada pelo teste da usuária | O pato aceita o resultado do teste como autoridade ("descartamos essa"), pergunta o que ela observou e parte para outra hipótese. Nunca insiste numa hipótese contra a evidência do teste | Fechado (confirmado 2026-10-12) |
 | E11 | Pergunta factual que o pato não pode verificar (assinatura de função, versão, citação) | "Não sei te dizer de cabeça, e aqui eu não consigo buscar. Olha a doc [X] e me conta o que encontrou." (P7) — nunca inventa | Fechado (confirmado 2026-10-12) |
@@ -412,7 +406,7 @@ Excluído explicitamente para evitar vazamento de escopo (stakeholders assumem q
 
 - **R1 — Prazo:** entregar macOS e Windows em 2 dias é o maior risco de prazo (decisão D2). **Mitigação:** o loop essencial (convocar, conversar, toggles, encerrar) funciona nos dois sistemas; o acabamento visual pode ser mais simples num deles, se necessário.
 - **R2 — Erro confiado:** o pato afirma algo errado com confiança e a usuária age sobre isso. **Mitigação:** P7 + hipótese marcada + E10 (o teste da usuária é a autoridade). **Residual:** cabe à usuária testar — declarado como limite da POC, não defeito oculto, e documentado no repositório ("o que o pato não consegue fazer").
-- **R3 — Windows sem máquina de teste:** não há máquina Windows disponível para os testes de áudio. **Mitigação:** pedir a uma pessoa externa que instale pelo repositório e reporte (conecta com CS4); uma única base de código para os dois sistemas (C4: Electron na UI).
+- **R3 — Windows sem máquina de teste:** não há máquina Windows disponível para os testes de áudio. **Mitigação:** pedir a uma pessoa externa que instale pelo repositório e reporte (conecta com CS3); uma única base de código para os dois sistemas (C4: Electron na UI).
 
 ---
 
@@ -423,9 +417,8 @@ Excluído explicitamente para evitar vazamento de escopo (stakeholders assumem q
 | # | Questão | Proposta em análise | Quando resolver |
 |---|---|---|---|
 | Q1 (A5) | Persona e falas-chave (seção 5.6) ficam como propostas? | Revisar e ajustar | Antes da gravação da demo |
-| Q3 (AC3.7) | Manter "o pato não escreve código por você"? | Manter | Antes de congelar a system instruction |
 
-Fechadas em 2026-10-12 e registradas no apêndice A: Q2/E8 (Quack! ao religar o microfone, D11), Q4/P7 (honestidade epistêmica, D14), Q5/A6 (chave própria de API para quem instala, D12), Q6/C4 (stack híbrida Python + Electron, D13).
+Fechadas em 2026-10-12 e registradas no apêndice A: Q2/E8 (Quack! ao religar o microfone, D11), Q4/P7 (honestidade epistêmica, D14), Q5/A6 (chave própria de API para quem instala, D12), Q6/C4 (stack híbrida Python + Electron, D13); Q3 (AC3.7 mantido — plano, decisão #7, 2026-10-12).
 
 ### 10.2 Estacionamento (perguntas técnicas — para o plano técnico)
 
@@ -441,7 +434,7 @@ Fechadas em 2026-10-12 e registradas no apêndice A: Q2/E8 (Quack! ao religar o 
 
 ## Apêndice A — Registro de decisões
 
-Todas fechadas em 2026-10-12.
+Fechadas em 2026-10-12 (D1–D14; D11 revogada pela D17) e em 2026-10-13 (D15–D17).
 
 | # | Pergunta | Decisão | Consequência |
 |---|----------|---------|--------------|
@@ -459,10 +452,13 @@ Todas fechadas em 2026-10-12.
 | A3 | A usuária pode interromper o pato falando; ele para e ouve | **Confirmado** | P4, AC3.6, E3 |
 | A4 | Os dois toggles são independentes | **Confirmado** | AC4.2 |
 | D10 | O que acontece após silêncio longo? | **A sessão encerra e o pato entra em modo sleep:** permanece na tela com olhos fechados e símbolos "zzz"; microfone desligado; acorda com novo comando de convocação | E2 reescrito, estado Sleep (5.5), F9, P6/AC2.3/fluxo A ajustados |
-| D11 (E8) | Pato confirma ao religar o microfone? | **Sim — um "Quack!" curto** | E8 fechado; exceção de P6 |
+| D11 (E8) | Pato confirma ao religar o microfone? | **Sim — um "Quack!" curto** — **revogada pela D17** (sem quack; plano, decisão #12) | E8 revisto; exceção de P6 removida na v1.8 |
 | D12 (A6) | Quem instala usa a própria chave da API? | **Sim** | AC7.3, CS4, dependência externa |
 | D13 (C4) | Stack: Python ou Electron? | **As duas: Python** para a comunicação com a Gemini Live API e configurações de servidor; **Electron** para a UI | C4 fechado; integração no Estacionamento |
 | D14 | Tratamentos propostos dos edge cases (E4, E7, E9, E10, E11) e P7 | **Aceitos como propostos no documento** | Tabela 7.3 confirmada; P7 fechado; fala de E11 atualizada |
+| D15 | Saídas do estado Sleep | **Atalho, arrasto do pato ou botão de microfone** — o pato acorda e abre sessão nova (plano, decisões #10 e #13) | Tabela 5.5, E2 |
+| D16 | Mudo explícito conta como inatividade? | **Não** — mutado mantém a sessão viva; o sono só dispara com microfone ligado (plano, decisão #11) | Tabela 5.5 (nota), E2 |
+| D17 | Sons de "quack" no produto | **Nenhum** — a confirmação ao religar é o indicador visual da pílula (revoga D11; plano, decisão #12) | 5.6, E8 |
 
 ---
 
@@ -470,7 +466,7 @@ Todas fechadas em 2026-10-12.
 
 ### Seção mais forte
 
-Seção 7 (histórias e requisitos): 7 histórias com critérios testáveis, 11 edge cases com tratamento definido e 13 decisões registradas — o comportamento do produto está especificado.
+Seção 7 (histórias e requisitos): 6 histórias com critérios testáveis, 11 edge cases com tratamento definido e 17 decisões registradas (D1–D17; D11 revogada pela D17) — o comportamento do produto está especificado.
 
 ### Seção mais fraca
 
@@ -482,9 +478,9 @@ Seção 2 (problema): sem pesquisa com usuárias — a evidência vem do conceit
 |---|----------|-------|----------------|--------------------|
 | 1 | Conversar com o pato destrava/consolida mais rápido que o silêncio | 2, 7.1 | A premissa do produto cai; a POC vira só demo de API | Observar nas sessões de teste; registrar destravamentos reais |
 | 2 | Falas e persona propostas funcionam na gravação | 5.6 | A demo soa artificial | Ensaio curto antes de gravar (A5) |
-| 3 | Terceiras pessoas instalam pelo README com a própria chave | 3, 6 (CS4), 7 (US7) | O objetivo do repositório público não se materializa | Pedir a uma pessoa externa que instale e reporte |
+| 3 | Terceiras pessoas instalam pelo README com a própria chave | 3, 6 (CS3), 7 (US7) | O objetivo do repositório público não se materializa | Pedir a uma pessoa externa que instale e reporte |
 | 4 | Coerência em sessões longas sem estourar o custo | 7.3 (E6), 7.4 (C2) | CS2 violado ou pato perde o contexto | Medir custo e coerência numa sessão longa durante a POC |
 
 ### Próximo passo recomendado
 
-Resolver as 2 pendências restantes da seção 10.1: Q1 (revisão de falas e persona antes da gravação) e Q3 (manter ou relaxar o AC3.7). As demais decisões foram fechadas (apêndice A, D10–D14); o plano técnico já pode começar com a stack híbrida de C4.
+Resolver a 1 pendência restante da seção 10.1: Q1 (revisão de falas e persona antes da gravação — redraft v1.9). As demais decisões foram fechadas (apêndice A, D1–D17); o plano técnico já começou com a stack híbrida de C4.

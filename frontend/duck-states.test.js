@@ -133,6 +133,23 @@ test("muting while speaking preserves the frame and the playback", () => {
   h.controller.destroy();
 });
 
+test("clicking the mic button while the duck sleeps wakes it into a new listening session", () => {
+  const h = integrationHarness();
+  h.emit("sleep");
+  assert.equal(h.root.dataset.status, DUCK_STATES.SLEEP);
+  let micStarts = 0;
+  const originalStart = h.mic.start;
+  h.mic.start = (...args) => {
+    micStarts++;
+    return originalStart.apply(h.mic, args);
+  };
+  h.elements["#mic-toggle"].click();
+  assert.equal(h.root.dataset.status, DUCK_STATES.OUVINDO);
+  assert.equal(micStarts, 1);
+  assert.equal(h.elements["#duck-avatar"].src, "/images/pato.png");
+  h.controller.destroy();
+});
+
 test("interruption, server error, playback failure and disconnect close immediately", (t) => {
   t.mock.method(console, "warn", () => {});
   t.mock.method(console, "log", () => {});
