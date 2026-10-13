@@ -5,6 +5,3 @@ __pycache__/
 .pytest_cache/
 .zcode/
 
-# Arte do projeto (não versionar)
-frontend/images/*
-!frontend/images/.gitkeep
