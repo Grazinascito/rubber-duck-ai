@@ -117,6 +117,15 @@ Nada disso invalida a D15 ou a estrutura aprovada — são ajustes de contorno.
 
 ## 4. Segurança, privacidade e responsible AI — quem cuida do quê
 
+> **Atualização — 13/10/2026:** a referência atual deste tema é o documento
+> [Propostas de segurança, privacidade e IA responsável](seguranca-privacidade-ia-responsavel.md).
+> O texto abaixo fica como registro histórico. A nova referência substitui
+> as conclusões sobre suporte a `safety_settings` na Live, alcance dos padrões
+> de segurança, tratamento e retenção de dados e divisão de responsabilidades
+> no uso de chave própria. Também distingue validade do identificador de
+> retomada e retenção do estado da sessão. As medidas são propostas para
+> avaliação e implementação futura.
+
 Resposta curta à pergunta "a SDK já faz tudo?": **não**. A divisão é: a API/SDK do Google entrega os filtros de conteúdo, o transporte criptografado e a infraestrutura; **tudo que é decisão de produto e de código local é nosso** — onde a chave vive, quem conecta no servidor, o que o README revela, e o que o pato tem permissão de afirmar.
 
 ### 4.1 O que o Google/API/SDK já cobre (não construímos)

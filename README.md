@@ -15,21 +15,71 @@ O Rubber Duck AI traz esse pato para a tela, com voz. Em vez de um objeto inerte
 
 O detalhamento completo de produto está no [PRD](docs/rubber-duck-prd.md).
 
+## Segurança, privacidade e IA responsável
+
+As [propostas de segurança, privacidade e IA responsável](docs/seguranca-privacidade-ia-responsavel.md)
+explicam o tratamento de dados pelo Google, as responsabilidades do projeto e
+as medidas propostas para a POC e sua evolução. O documento inclui critérios
+de validação e decisões a tomar antes de ampliar o uso.
+
 ## Como funciona
 
 ```mermaid
-graph TD
-    A[Usuária fala com o pato] --> B[Electron captura o microfone em PCM]
-    B --> C[WebSocket para o backend FastAPI]
-    C --> D[Gemini Live API]
-    D --> E[Áudio de resposta volta pelo WebSocket]
-    E --> F[Web Audio toca e anima o bico do pato]
+flowchart TD
+    USR([Usuária])
+
+    subgraph RENDERER["Electron — renderer (frontend/)"]
+        direction TB
+        SM["duck-state-machine.js — máquina de estados"]
+        ORQ["duck-states.js — orquestra a conversa"]
+        GC["gemini-client.js — cliente WebSocket"]
+        MIC["microphone-and-speaker.js — captura e playback PCM"]
+        PROC["pcm-processor.js — AudioWorklet"]
+        ANIM["duck-talk-animator.js — bico sincronizado por RMS"]
+    end
+
+    subgraph MAIN["Electron — processo main"]
+        direction TB
+        TRAY["Tray + atalho global Ctrl/Cmd+Shift+D"]
+        PRE["preload.js — ponte segura de API"]
+        WIN["Janela flutuante arrastável e always-on-top"]
+    end
+
+    subgraph BACKEND["Backend Python — FastAPI em 127.0.0.1:8000"]
+        direction TB
+        WS["WebSocket /ws — ponte de envelopes"]
+        WD["Watchdog de sleep — 80 s de silêncio"]
+        RESUM["Sessão resumível — handle + go_away"]
+    end
+
+    GEM[["Gemini Live API"]]
+
+    USR -- "fala" --> MIC
+    MIC --> PROC
+    PROC -- "chunks PCM" --> GC
+    GC -- "binário" --> WS
+    WS -- "send_audio" --> GEM
+    GEM -- "áudio + eventos" --> WS
+    WS -- "envelopes JSON" --> GC
+    GC --> ORQ
+    ORQ -- "dispatch de ações" --> SM
+    ORQ -- "playChunk" --> MIC
+    MIC -- "RMS da saída" --> ANIM
+    WD -- "sleep após inatividade" --> WS
+    TRAY -- "convocar / ocultar" --> PRE
+    PRE -- "api.summon / dismiss" --> ORQ
+    WIN -- "arrasto acorda do SLEEP" --> PRE
+    RESUM -- "reconexão única" --> GEM
 ```
 
-1. O app Electron (janela flutuante, sempre por cima) captura o microfone e envia os chunks de áudio PCM pelo WebSocket para o backend Python.
-2. O backend FastAPI mantém a sessão com a **Gemini Live API** (streaming bidirecional de áudio) e retransmite os envelopes entre o modelo e o frontend. A chave de API existe só no processo Python — o renderer nunca a vê.
-3. A voz do pato toca no renderer via Web Audio; o animador mede o RMS da saída e troca o `src` do avatar para sincronizar o bico com a fala (sem relação com o microfone).
-4. Um watchdog no backend adormece o pato após 80 s de silêncio; mudo explícito pausa esse contador. Pato ocultado não captura nada (privacidade).
+Visão em texto, camada a camada:
+
+1. **Electron renderer** — a UI do pato. `microphone-and-speaker.js` captura o microfone via `pcm-processor.js` (AudioWorklet) e envia os chunks PCM binários pelo WebSocket de `gemini-client.js`. O áudio de resposta chega em envelopes JSON, entra numa fila de reprodução (Web Audio) e o `duck-talk-animator.js` mede o RMS dessa saída para animar o bico. A conversa inteira é regida pela máquina de estados, que troca a arte do avatar conforme o status.
+2. **Electron main** — janela flutuante arrastável e always-on-top, tray com ícone próprio e atalho global `CommandOrControl+Shift+D`. O renderer nunca acessa Node diretamente: tudo passa pela API exposta no `preload.js`.
+3. **Backend Python (FastAPI)** — ponte WebSocket em `127.0.0.1:8000` entre o renderer e a Gemini Live API, única parte que conhece a chave de API. Mantém a sessão resumível (reconexão única após `go_away`), aplica o watchdog de sleep (80 s de silêncio com microfone ligado; mudo explícito pausa o contador) e serve os arquivos estáticos do frontend com CSP restritiva.
+4. **Gemini Live API** — streaming bidirecional de áudio com o modelo; devolve a voz do pato e eventos de turno (interrupção, `turn_complete`).
+
+Privacidade por construção: pato oculto não captura nada (microfone e sessão são encerrados), e o mute desliga a captura de verdade, sem track vivo.
 
 ## Estados do pato
 
