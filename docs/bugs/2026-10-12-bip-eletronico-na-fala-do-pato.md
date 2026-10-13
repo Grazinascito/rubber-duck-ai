@@ -1,87 +1,90 @@
 # Bug report — Bip eletrônico na voz do pato
 
-- **Data:** 2026-10-12, 19h54 (gravação de tela de 27,44 s); report registrado em 2026-10-13 e corrigido no mesmo dia após observação da usuária
+- **Data:** 2026-10-12, 19h54 (gravação de tela de 27,44 s). Diagnosticado e corrigido em 2026-10-13
 - **Descoberto por:** Grazi, durante uso real do app (conversa de teste com o pato)
-- **Componente:** cadeia de reprodução de voz do pato — `frontend/microphone-and-speaker.js` (`playChunk`), `frontend/duck-states.js` (envelope `gemini` → `DUCK_AUDIO`), `frontend/duck-talk-animator.js` (animação do bico), `main.py` (encaminha `payload.audio`) e o stream de áudio do Gemini Live
-- **Severidade:** média — não impede a conversa, mas o som é audível e incômodo (presente nas 3 falas do pato na gravação) e contaminou a validação manual
-- **Status:** aberto — este report descreve o problema; nenhuma causa raiz foi investigada e nenhuma correção foi aplicada
+- **Componente:** captura + reprodução de áudio no frontend: `frontend/microphone-and-speaker.js` e `frontend/pcm-processor.js`
+- **Severidade:** média. Não impede a conversa, mas o som é audível, incômodo e contaminou a validação manual
+- **Status:** ✅ **resolvido** no [PR #1](https://github.com/Grazinascito/rubber-duck-ai/pull/1) (branch `fix-bip`). Validado pela usuária rodando o app
 
 ---
 
-## Título (resumo)
+## Resumo
 
-Um tom eletrônico (o "bip") acompanha a voz do pato **sempre que o pato fala**, misturado ao áudio da fala. Na maior parte do tempo a voz mascara o tom; ele fica claramente audível quando a voz pausa ou termina — por isso a primeira análise o detectou apenas nas bordas dos turnos. Correção da usuária (2026-10-13): "não é só no final da fala, o bip acontece sempre que o pato fala" — confirmada por análise espectral da fala completa.
+Durante a fala do pato aparecia um bip agudo e metálico **no meio da fala**, em rajadas de ~50 ms a ~0,6 s, pelo menos uma por resposta. A causa **não** estava no áudio do Gemini. O motor de áudio do navegador perdia o prazo de renderização e **repetia o último bloco de 128 amostras** centenas de vezes. Isso acontecia porque captura (AudioWorklet) e reprodução dividiam o **mesmo `AudioContext`**, e o worklet de captura gerava pressão de GC a cada bloco.
 
-## Fonte da evidência
+## Sintoma
 
-- Gravação de tela com microfone: `/Users/grazinascimento/Desktop/Screen Recording 2026-10-12 at 19.54.46.mov` (27,44 s)
-- Método de análise: áudio extraído e decomposto por frequência (banco de Goertzel — detector de tons por frequência), quadros extraídos a 4 por segundo e inspecionados, transcrição da fala
-- O áudio da gravação vem do microfone da máquina; portanto tudo que se ouve na gravação saiu dos alto-falantes ou da voz no ambiente
+1. Pato convocado por atalho; Grazi pede: "Ei, pato, manda um salve pro pessoal do Twitter."
+2. O pato responde. No meio da fala surge um "biiip" agudo, misturado à voz.
+3. Grazi pergunta sobre o bip. O pato responde "Não ouço nenhum bipe por aqui". Isso é coerente: o `echoCancellation: true` remove do microfone o que sai dos alto-falantes.
+4. O bip reaparece no turno seguinte, mais alto.
 
-## Passos para reproduzir (o que ocorre no vídeo)
+Sintoma correlato: o bico às vezes ficava aberto logo depois da fala. O bloco repetido mantinha o RMS acima de `LIMIAR_1`.
 
-1. Pato convocado por atalho (~2 s; acorda do sono).
-2. Grazi fala: "Ei, pato, manda um salve pro pessoal do Twitter." (2–6 s).
-3. Pato responde (turno 1, 7–11 s): "Salve para todo mundo do Twitter. O que estamos estudando hoje?"
-4. Grazi desmuta o microfone pelo pill (~10 s; ícone do mic muda de cinza para escuro).
-5. Grazi pergunta sobre o bip; o pato responde (turno 2, 19–24 s): "Não ouço nenhum bipe por aqui. Tudo bem? ..."
-6. Grazi muta o microfone de novo (entre 20 e 25 s).
-7. Pato fala "Estou aqui..." (turno 3, 26–27 s; gravação corta no fim).
+## Evidência
 
-O tom apareceu nos **3 turnos** do pato. Ainda não se sabe se ocorre em toda sessão ou esporadicamente.
+Áudio extraído da gravação (AAC 48 kHz, convertido para mono) e analisado por espectrograma e autocorrelação. Tempos medidos no áudio extraído.
 
-## Resultado esperado
-
-- A saída de áudio do pato contém apenas a voz sintetizada, sem nenhum tom eletrônico junto. O app não possui sons próprios (nenhum arquivo ou recurso de som no código); a única saída de áudio especificada é a voz do pato.
-- O bico fecha assim que a fala termina. A animação do bico é dirigida pelo RMS do sinal reproduzido (RMS = valor médio da amplitude do áudio; limiar de abertura `LIMIAR_1 = 0.02` em `duck-talk-animator.js:12`).
-
-## Resultado atual (observado na gravação)
-
-### 1. Tom eletrônico presente durante toda a fala do pato (e só na fala dele)
-
-Rastreamento do bin de 375 Hz em buckets de 250 ms no vídeo inteiro (amplitudes relativas; piso de ruído em silêncio = 0,4–4):
-
-| Janela | O que é | Nível do bin 375 Hz |
+| Momento | Duração aprox. | O que se vê |
 |---|---|---|
-| 7,5–11,0 s (turno 1 do pato) | fala do pato | 16–252 em todos os buckets, quase sempre > 60 |
-| 19,5–24,0 s (turno 2 do pato) | fala do pato | 18–998 em todos os buckets, quase sempre > 60 |
-| 26,75–27,25 s (turno 3) | fala do pato | 39–170 |
-| 2,25–5,75 s e 13,0–17,75 s | fala da Grazi | piso a moderado (7–33; picos isolados 107 e 151) |
-| 0–2 s, 6–7 s, 11,5–13 s, 18–19,5 s, 24,5–26,5 s | silêncio | 0,4–4 |
+| ~8,1 s | ~50 ms | rajada curta (turno 1) |
+| ~10,2 s | ~0,6 s | rajada misturada à voz (turno 1) |
+| ~19,5 s | ~0,2 s | rajada curta (turno 2) |
+| ~23,46–23,9 s | ~0,5 s | **bip alto**, o mais audível (turno 2) |
 
-O tom existe enquanto o pato fala e some junto. Ele não aparece na voz da usuária nem nos silêncios — a fonte é a saída de áudio do pato, não o ambiente nem a cadeia de gravação.
+**Assinatura do bip:**
 
-### 2. Onde o tom fica audível (os "bipes")
+- Autocorrelação com pico em **lag = 128 amostras a 48 kHz**, correlação > 0,9 entre blocos consecutivos. Ou seja, o mesmo bloco de 128 amostras se repete quase idêntico.
+- Espectro em "pente": fundamental de **375 Hz** (= 48000 / 128) e harmônicos 750, 1125, 1500, 1875, 2250 Hz… até ~16 kHz. As linhas são perfeitamente horizontais: sem variação de pitch, sem formantes que mudam. É um sinal estacionário, não é voz.
+- **128 frames é exatamente o tamanho do render quantum do Web Audio** (o bloco que o motor processa por vez). Quando o thread de renderização atrasa, o último quantum é tocado de novo em loop, e o loop de 128 amostras vira um tom de 375 Hz.
 
-- **Bip 1 — 11,25 a 11,95 s (~700 ms, volume baixo):** assim que a voz do turno 1 para, o tom fica exposto: ~750 Hz estável com 61% da energia da janela, RMS geral baixo (o sinal é quase só o tom).
-- **Bip 2 — 23,87 a 24,15 s (~280 ms, volume alto):** no fim do turno 2 o tom **cresce 4–5×** (bin 375 Hz salta de ~60–200 para 668–998) e soa como o bip alto: 375 + 750 + 1500 Hz simultâneos (razão exata 1:2:4 — um som fundamental e seus harmônicos).
-- **Reação da usuária (13–18 s):** "Cara, que diabo de bipe é esse? Tem um bipe aí no... ah!"
-- **O pato não escuta o bip:** respondeu "Não ouço nenhum bipe por aqui". Coerente com o cancelamento de eco ativo na captura (`echoCancellation: true`, `microphone-and-speaker.js:23`): o som que sai dos alto-falantes é removido do áudio enviado ao modelo.
+## Causa raiz
 
-### 3. Sintoma correlato — bico preso aberto
+Duas causas que se somavam:
 
-Às 24,5 s e 25,2 s (silêncio entre os turnos 2 e 3) o bico permaneceu **aberto**. No silêncio entre os turnos 1 e 2 (14,0 s) o bico estava corretamente **fechado**. O tom que persiste no barramento de reprodução após a voz mantém o RMS acima do limiar e segura o quadro de "falando" (`duck-talk-animator.js:90-115`).
+1. **Um único `AudioContext` para captura e reprodução.** O `MicAndSpeaker.start()` registrava o `pcm-processor` (AudioWorklet) no mesmo contexto usado pelo `playChunk()`. No Chromium, um contexto com AudioWorklet passa a renderizar **o grafo inteiro** no thread do worklet, que tem prioridade de agendamento menor que o thread de áudio padrão. A voz do pato passou a disputar CPU com a captura do microfone.
+2. **Alocação e mensagens a cada bloco no `pcm-processor.js`.** Cada chamada de `process()` (~375×/s) criava 3–4 arrays (`new Float32Array` ×2, `slice`, `new Int16Array`) e fazia um `postMessage`. Isso gera coleta de lixo (GC) no mesmo thread que renderiza o áudio. Uma pausa de GC faz o render quantum perder o prazo, e o bloco se repete.
 
-## Por que não é som de sistema ou notificação
+### Por que as hipóteses anteriores estavam erradas
 
-1. Nos quadros exatos dos dois bipes audíveis, o canto superior direito da tela (área de banners de notificação do macOS) foi inspecionado: nenhum banner, popup ou alerta em nenhum instante.
-2. A assinatura espectral do tom foi comparada com os 14 sons de `/System/Library/Sounds/` (Basso, Funk, Sosumi, Tink, Submarine, Ping etc.), com o som de carregador (`connect_power.aif` do PowerChime) e com `IKBeep.aiff`: nenhum contém tom puro de 375/750 Hz.
-3. Sons de notificação são chimes musicais (sequências de notas). O tom do vídeo é **fixo e estável** enquanto existe, característica de artefato de áudio digital.
-4. Um som de sistema tocaria independentemente de quem fala; o tom aparece só durante a fala do pato (tabela acima).
+A primeira versão deste report levantava três hipóteses: o tom viria no stream do Gemini, seria injetado pelo agendamento em `playChunk`, ou seria um chunk em loop no fim do turno. Ela também afirmava que o tom estava presente durante **toda** a fala.
 
-## Caracterização técnica do som
+- A medição do bin de 375 Hz durante a fala captava sobretudo **energia da própria voz** nessa faixa, não o tom. A assinatura periódica de 128 amostras só aparece em **rajadas**.
+- O período de 64 amostras a 24 kHz (o "OUTPUT_RATE") é o mesmo tempo que 128 amostras a 48 kHz. A coincidência levou a suspeitar do PCM do Gemini, mas o número que explica o bug é o **render quantum**, não a taxa do stream.
+- Agendamento com lacunas em `playChunk` geraria silêncio ou cliques, não um tom estacionário com período de 128 frames.
 
-- 375 Hz é um padrão que se repete a cada 64 amostras a 24 kHz; 750 Hz, a cada 32 amostras. 24 kHz é exatamente a taxa de reprodução do pato (`OUTPUT_RATE = 24000`, `microphone-and-speaker.js:14`).
-- Essa correspondência aritmética com a taxa de reprodução, mais os harmônicos 1:2:4 no bip alto, apontam para um **padrão de PCM periódico** (PCM = áudio digital em amostras cruas) na saída do pato — não para um som intencional de qualquer aplicação.
+## Correção ([PR #1](https://github.com/Grazinascito/rubber-duck-ai/pull/1))
 
-## Hipóteses de causa (não verificadas — sem investigação de causa raiz ainda)
+### `frontend/microphone-and-speaker.js`: dois AudioContexts
 
-1. O tom vem **dentro do próprio stream do Gemini Live** (artefato de sintetização/codec do lado do servidor, presente nos chunks de áudio enviados ao frontend). Peso aumentou com a correção da usuária: o tom existe durante toda a fala, não só nas bordas — ou seja, ele já chega junto com os chunks.
-2. O tom é injetado pelo caminho local de reprodução enquanto ele está ativo (decodificação/agendamento dos chunks em `playChunk`, `microphone-and-speaker.js:91-133`).
-3. Hipótese menos provável (era a principal antes da correção): resíduo apenas na fronteira de fim de turno, p. ex. último chunk em loop — não explica o tom presente durante a fala inteira.
+- `audioContext` (só reprodução): `new AudioContext({ sampleRate: OUTPUT_RATE, latencyHint: "playback" })`, **sem worklet**. A reprodução volta para o thread de áudio de alta prioridade. É criado e retomado em `start()`, que roda depois de um gesto do usuário.
+- `captureContext` (novo): sample rate padrão; recebe `addModule("/pcm-processor.js")`, o `MediaStreamSource` e o `AudioWorkletNode`.
+- `stopCapture()` fecha o `captureContext`; `close()` fecha os dois.
+- Interface pública da classe inalterada.
+
+### `frontend/pcm-processor.js`: zero alocação em `process()`
+
+- Buffer de trabalho `Float32Array` e lote `Int16Array(640)` pré-alocados no constructor.
+- Leftover e posição fracionária mantidos por índices: nenhum `new` ou `slice` por bloco.
+- `postMessage` só quando o lote de **640 amostras (40 ms a 16 kHz)** enche. Isso reduz de ~375 para 25 mensagens/s. A única cópia é o `slice()` transferido.
+- Mesma interpolação linear e mesmo clamp.
+
+### Testes
+
+- Novo teste `start() wires capture and playback on separate AudioContexts` em `microphone-and-speaker.test.js`.
+- `npm test` (frontend): 50/50. `.venv/bin/python -m pytest -q`: 23 passaram.
+- Teste de unidade não reproduz o bip real (exige áudio físico). A validação final foi manual, rodando o app: o bip sumiu.
+
+## Lições / prevenção
+
+- **Período de repetição = 128 frames → suspeite do render thread**, não do conteúdo do áudio. Medir o período por autocorrelação foi o que separou "áudio ruim vindo do servidor" de "motor de áudio engasgando".
+- **Não misture AudioWorklet de captura com reprodução no mesmo `AudioContext`.** Captura e reprodução ficam em contextos separados.
+- **Dentro de `process()` de um AudioWorklet: nada de `new`, `slice`, closures ou `postMessage` por bloco.** Pré-alocar e enviar em lotes.
+- Se voltar a acontecer: gravar a saída, rodar autocorrelação e conferir se o pico está em 128 amostras (na taxa do contexto de reprodução).
 
 ## Referências
 
-- Código: `frontend/microphone-and-speaker.js` (`playChunk` 91–133, `OUTPUT_RATE` 14, `echoCancellation` 23, `stopPlayback` 164–181, `acquirePlaybackMeter` 140–162); `frontend/duck-states.js` (207–221, envelope `gemini` → `mic.playChunk` → `animator.start`); `frontend/duck-talk-animator.js` (12–13 limiares, 90–115 laço de RMS); `main.py` (encaminhamento de `payload.audio`).
-- Parente próximo: [2026-10-12-loop-infinito-de-saudacao-us2.md](./2026-10-12-loop-infinito-de-saudacao-us2.md) — aquele bug também se manifestava na fronteira de turno (`turn_complete`); este aqui é posterior àquela correção.
-- Vídeo original: `/Users/grazinascimento/Desktop/Screen Recording 2026-10-12 at 19.54.46.mov`.
+- PR da correção: [#1 — fix: Eliminar bip agudo durante a fala do pato](https://github.com/Grazinascito/rubber-duck-ai/pull/1)
+- Código: `frontend/microphone-and-speaker.js` (`start`, `stopCapture`, `playChunk`, `close`), `frontend/pcm-processor.js` (`process`), `frontend/duck-talk-animator.js` (limiares de RMS do bico)
+- Parente próximo: [2026-10-12-loop-infinito-de-saudacao-us2.md](./2026-10-12-loop-infinito-de-saudacao-us2.md)
+- Vídeo original: `Screen Recording 2026-10-12 at 19.54.46.mov`

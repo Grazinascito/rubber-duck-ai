@@ -2,7 +2,10 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { MicAndSpeaker } = require("./microphone-and-speaker.js");
+const {
+  MicAndSpeaker,
+  OUTPUT_RATE,
+} = require("./microphone-and-speaker.js");
 
 function node() {
   return {
@@ -103,6 +106,88 @@ test("audio context suspension stops queued playback and reports an error", () =
   assert.equal(mic.hasPendingPlayback(), false);
   assert.throws(() => mic.playChunk(chunk), /not running/);
   mic.close();
+});
+
+test("start() wires capture and playback on separate AudioContexts", async () => {
+  const previousAudioContext = global.AudioContext;
+  const previousAudioWorkletNode = global.AudioWorkletNode;
+  const previousNavigator = global.navigator;
+  const contexts = [];
+  const worklets = [];
+  const stream = { getTracks: () => [{ stop() {} }] };
+  const source = node();
+  global.AudioContext = class {
+    constructor(options) {
+      this.options = options ?? null;
+      this.state = "running";
+      this.destination = node();
+      this.audioWorklet = { addModule: async (url) => { this.moduleUrl = url; } };
+      contexts.push(this);
+    }
+    resume() {}
+    close() { this.state = "closed"; }
+    addEventListener() {}
+    removeEventListener() {}
+    createMediaStreamSource(s) { source.stream = s; return source; }
+  };
+  global.AudioWorkletNode = class {
+    constructor(context, name) {
+      this.context = context;
+      this.name = name;
+      this.port = { onmessage: null };
+      worklets.push(this);
+    }
+    disconnect() {}
+  };
+  Object.defineProperty(global, "navigator", {
+    value: { mediaDevices: { getUserMedia: async () => stream } },
+    configurable: true,
+  });
+  try {
+    const mic = new MicAndSpeaker();
+    const chunks = [];
+    await mic.start((chunk) => chunks.push(chunk));
+
+    assert.equal(contexts.length, 2);
+    assert.equal(mic.audioContext, contexts[0]); // playback, created first
+    assert.deepEqual(mic.audioContext.options, {
+      sampleRate: OUTPUT_RATE,
+      latencyHint: "playback",
+    });
+    assert.equal(mic.audioContext.moduleUrl, undefined); // no worklet here
+
+    assert.equal(mic.captureContext, contexts[1]); // capture, default rate
+    assert.equal(mic.captureContext.options, null);
+    assert.equal(mic.captureContext.moduleUrl, "/pcm-processor.js");
+    assert.equal(source.stream, stream);
+    assert.equal(worklets.length, 1);
+    assert.equal(worklets[0].context, mic.captureContext);
+    assert.equal(worklets[0].name, "pcm-processor");
+
+    worklets[0].port.onmessage({ data: new ArrayBuffer(2) });
+    assert.equal(chunks.length, 1);
+    assert.equal(chunks[0].length, 1);
+
+    mic.stopCapture();
+    assert.equal(mic.captureContext, null);
+    assert.equal(contexts[1].state, "closed");
+    assert.equal(mic.audioContext.state, "running");
+
+    mic.close();
+    assert.equal(mic.audioContext, null);
+    assert.equal(contexts[0].state, "closed");
+  } finally {
+    global.AudioContext = previousAudioContext;
+    global.AudioWorkletNode = previousAudioWorkletNode;
+    if (previousNavigator === undefined) {
+      delete global.navigator;
+    } else {
+      Object.defineProperty(global, "navigator", {
+        value: previousNavigator,
+        configurable: true,
+      });
+    }
+  }
 });
 
 test("failed source start disconnects the source", () => {
