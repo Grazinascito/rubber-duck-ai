@@ -2,9 +2,19 @@
 
 POC de um pato de borracha com voz: um pato flutuante na tela, arrastável e convocável por atalho global de teclado, que conversa por voz com quem está estudando. A inspiração é a técnica de *rubber duck debugging* de *The Pragmatic Programmer* — explicar em voz alta para organizar o raciocínio — só que aqui o pato responde.
 
+## Tecnologias
+
+- **Backend:** Python 3.10+, FastAPI, WebSocket, [google-genai](https://pypi.org/project/google-genai/) (SDK da Gemini Live API), uvicorn, python-dotenv.
+- **Frontend:** Electron 44, JavaScript vanilla (sem framework), Web Audio API (captura, reprodução PCM e análise de RMS para o bico), AudioWorklet.
+- **Testes:** pytest (backend) e `node --test` (frontend), cobrindo análise do bico, pré-carregamento, interrupção, fila de reprodução, fim de turno, acessibilidade e limpeza.
+
 ## O produto
 
-| ![Pato ouvindo](frontend/images/pato.png) | ![Pato pensando](frontend/images/pato-thinking.png) | ![Pato dormindo](frontend/images/pato-sleep.png) |
+<p align="center">
+  <img src="frontend/images/pato.png" width="160" alt="Pato ouvindo/falando" />
+  <img src="frontend/images/pato-thinking.png" width="160" alt="Pato pensando" />
+  <img src="frontend/images/pato-sleep.png" width="160" alt="Pato dormindo" />
+</p>
 
 
 A inspiração vem de *The Pragmatic Programmer* (Andrew Hunt e David Thomas, 1999): a técnica do **rubber duck debugging**, em que a pessoa programadora explica o próprio código em voz alta para um pato de borracha — o ato de verbalizar já organiza o raciocínio e frequentemente revela a resposta.
@@ -96,12 +106,6 @@ A conversa é governada por uma máquina de estados ([`frontend/duck-state-machi
 | **FALANDO** | O pato responde por voz, com o bico sincronizado ao áudio. |
 | **SLEEP** | Adormeceu após 80 s de silêncio (sessão encerrada). Acorda por atalho, arrasto ou clique na pílula.|
 | **Sem escuta** (derivado) | Não é um sexto estado: é o microfone desligado (mudo, SLEEP ou OCULTO), refletido no botão da pílula. | — |
-
-## Tecnologias
-
-- **Backend:** Python 3.10+, FastAPI, WebSocket, [google-genai](https://pypi.org/project/google-genai/) (SDK da Gemini Live API), uvicorn, python-dotenv.
-- **Frontend:** Electron 44, JavaScript vanilla (sem framework), Web Audio API (captura, reprodução PCM e análise de RMS para o bico), AudioWorklet.
-- **Testes:** pytest (backend) e `node --test` (frontend), cobrindo análise do bico, pré-carregamento, interrupção, fila de reprodução, fim de turno, acessibilidade e limpeza.
 
 ## Como rodar
 
