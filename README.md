@@ -4,6 +4,9 @@ POC de um pato de borracha com voz: um pato flutuante na tela, arrastável e con
 
 ## O produto
 
+| ![Pato ouvindo](frontend/images/pato.png) | ![Pato pensando](frontend/images/pato-thinking.png) | ![Pato dormindo](frontend/images/pato-sleep.png) |
+
+
 A inspiração vem de *The Pragmatic Programmer* (Andrew Hunt e David Thomas, 1999): a técnica do **rubber duck debugging**, em que a pessoa programadora explica o próprio código em voz alta para um pato de borracha — o ato de verbalizar já organiza o raciocínio e frequentemente revela a resposta.
 
 O Rubber Duck AI traz esse pato para a tela, com voz. Em vez de um objeto inerte, a conversa acontece de verdade — mas mantendo o espírito da técnica: quem explica é a usuária, e o pato pergunta antes de responder.
@@ -87,11 +90,11 @@ A conversa é governada por uma máquina de estados ([`frontend/duck-state-machi
 
 | Estado | Descrição | Imagem |
 |---|---|---|
-| **OCULTO** | Pato escondido; nenhuma captura acontece. Acordar: atalho `CommandOrControl+Shift+D`. | ![Pato oculto](frontend/images/pato.png) |
-| **OUVINDO** | Sessão aberta, microfone ativo, aguardando a usuária começar a falar. | ![Pato ouvindo](frontend/images/pato.png) |
-| **PENSANDO** | A usuária terminou o turno; o pato processa a resposta. | ![Pato pensando](frontend/images/pato-thinking.png) |
-| **FALANDO** | O pato responde por voz, com o bico sincronizado ao áudio. | ![Pato falando](frontend/images/pato.png) |
-| **SLEEP** | Adormeceu após 80 s de silêncio (sessão encerrada). Acorda por atalho, arrasto ou clique na pílula. | ![Pato dormindo](frontend/images/pato-sleep.png) |
+| **OCULTO** | Pato escondido; nenhuma captura acontece. Acordar: atalho `CommandOrControl+Shift+D`.|
+| **OUVINDO** | Sessão aberta, microfone ativo, aguardando a usuária começar a falar. |
+| **PENSANDO** | A usuária terminou o turno; o pato processa a resposta. | 
+| **FALANDO** | O pato responde por voz, com o bico sincronizado ao áudio. |
+| **SLEEP** | Adormeceu após 80 s de silêncio (sessão encerrada). Acorda por atalho, arrasto ou clique na pílula.|
 | **Sem escuta** (derivado) | Não é um sexto estado: é o microfone desligado (mudo, SLEEP ou OCULTO), refletido no botão da pílula. | — |
 
 ## Tecnologias
