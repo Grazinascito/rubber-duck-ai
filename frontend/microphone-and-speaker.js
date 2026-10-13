@@ -29,7 +29,10 @@
 
   class MicAndSpeaker {
     constructor() {
+      // Playback-only context (OUTPUT_RATE); capture gets its own context so
+      // the worklet thread never competes with the speaker schedule.
       this.audioContext = null;
+      this.captureContext = null;
       this.stream = null;
       this.source = null;
       this.worklet = null;
@@ -53,16 +56,25 @@
         return; // already capturing
       }
       if (this.audioContext === null) {
-        this.audioContext = new AudioContext();
+        this.audioContext = new AudioContext({
+          sampleRate: OUTPUT_RATE,
+          latencyHint: "playback",
+        });
         this.audioContext.addEventListener("statechange", this.onContextStateChange);
       }
       if (this.audioContext.state === "suspended") {
         await this.audioContext.resume();
       }
-      await this.audioContext.audioWorklet.addModule("/pcm-processor.js");
+      if (this.captureContext === null) {
+        this.captureContext = new AudioContext();
+      }
+      if (this.captureContext.state === "suspended") {
+        await this.captureContext.resume();
+      }
+      await this.captureContext.audioWorklet.addModule("/pcm-processor.js");
       this.stream = await openMicrophoneStream();
-      this.source = this.audioContext.createMediaStreamSource(this.stream);
-      this.worklet = new AudioWorkletNode(this.audioContext, "pcm-processor");
+      this.source = this.captureContext.createMediaStreamSource(this.stream);
+      this.worklet = new AudioWorkletNode(this.captureContext, "pcm-processor");
       this.worklet.port.onmessage = (event) => {
         onAudioChunk(new Int16Array(event.data));
       };
@@ -84,6 +96,10 @@
         this.worklet.port.onmessage = null;
         this.worklet.disconnect();
         this.worklet = null;
+      }
+      if (this.captureContext !== null) {
+        this.captureContext.close();
+        this.captureContext = null;
       }
     }
 
